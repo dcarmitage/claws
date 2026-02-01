@@ -26,9 +26,6 @@ if (!query) {
   process.exit(1);
 }
 
-// We need to import QMD's store functions. Since QMD uses its own module system,
-// we'll work directly with the SQLite DB and call the embedding model ourselves.
-
 // Step 1: Find the QMD database
 const dbPath = join(homedir(), ".cache", "qmd", "index.sqlite");
 if (!existsSync(dbPath)) {
@@ -36,21 +33,22 @@ if (!existsSync(dbPath)) {
   process.exit(1);
 }
 
-// Step 2: Load the embedding model via QMD's llm module
-// We import QMD's source directly to reuse its embedding function
+// Step 2: Load QMD's modules for embedding
 process.chdir(QMD_DIR);
-const { getDefaultLlamaCpp } = await import(join(QMD_DIR, "src", "llm.ts"));
+const { getDefaultLlamaCpp, formatQueryForEmbedding } = await import(join(QMD_DIR, "src", "llm.ts"));
 
 const llm = getDefaultLlamaCpp();
 
-// Step 3: Embed the query (only loads the 300M model, NOT the 1.7B expansion model)
+// Step 3: Embed the query using the formatted query string (only loads 300M model)
 const startTime = Date.now();
-const embedding = await llm.embed(query, { model: "embeddinggemma", isQuery: true });
+const formattedQuery = formatQueryForEmbedding(query);
+const result = await llm.embed(formattedQuery, { model: "embeddinggemma", isQuery: true });
 
-if (!embedding || embedding.length === 0) {
+if (!result || !result.embedding || result.embedding.length === 0) {
   console.error("Failed to generate embedding for query");
   process.exit(1);
 }
+const embedding = result.embedding;
 
 const embedTime = Date.now() - startTime;
 
@@ -58,18 +56,13 @@ const embedTime = Date.now() - startTime;
 // Load sqlite-vec extension
 const db = new Database(dbPath, { readonly: true });
 
-// Try to load sqlite-vec
+// Load sqlite-vec extension
 try {
-  const sqliteVecPath = join(QMD_DIR, "node_modules", "sqlite-vec");
-  const vecModule = await import(sqliteVecPath);
-  if (vecModule.default?.loadable) {
-    db.loadExtension(vecModule.default.loadable);
-  } else if (vecModule.loadable) {
-    db.loadExtension(vecModule.loadable);
-  }
-} catch (e) {
-  // sqlite-vec might be built-in or loaded differently in bun
-  // Try to query anyway
+  const vecSoPath = join(QMD_DIR, "node_modules", "sqlite-vec-linux-arm64", "vec0");
+  db.loadExtension(vecSoPath);
+} catch (e: any) {
+  console.error("Failed to load sqlite-vec:", e.message);
+  process.exit(1);
 }
 
 // Vector search
