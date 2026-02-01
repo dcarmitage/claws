@@ -334,6 +334,17 @@ function init() {
     dbg('hls ' + (d.fatal?'FATAL ':'') + d.details);
     if (d.fatal) { hls.destroy(); hls = null; }
   });
+  hls.on(Hls.Events.BUFFER_STALLED_EVENT, () => {
+    dbg('buffer stall');
+    if (mode === 'live' && hls.liveSyncPosition) {
+      v.currentTime = hls.liveSyncPosition;
+    }
+  });
+  hls.on(Hls.Events.FRAG_BUFFERED, () => {
+    if (active && v.paused && mode === 'live') {
+      v.play().catch(() => {});
+    }
+  });
   dbg('hls init');
 }
 
