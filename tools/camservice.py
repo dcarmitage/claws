@@ -149,6 +149,16 @@ WATCH_HTML = r"""<!DOCTYPE html>
     font-size:56px;opacity:0;transition:opacity .25s;pointer-events:none;
     text-shadow:0 2px 12px rgba(0,0,0,.5)}
 
+  /* Audio hint */
+  #audio-hint{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+    padding:6px 16px;border-radius:12px;background:rgba(0,0,0,.5);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    font:11px/1 var(--sans);color:var(--hud-dim);letter-spacing:.03em;
+    pointer-events:none;z-index:8;opacity:0;transition:opacity .4s}
+  #audio-hint.show{opacity:1}
+  @keyframes hint-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  #audio-hint.show{animation:hint-pulse 2s ease-in-out infinite}
+
   /* Offline */
   #offline{position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;z-index:5}
@@ -212,6 +222,7 @@ WATCH_HTML = r"""<!DOCTYPE html>
 
   <div id="pause-flash">&#10074;&#10074;</div>
 
+  <div id="audio-hint">tap to enable audio</div>
   <div id="offline">
     <div class="off-icon">&#127744;</div>
     <div class="off-label"><strong>portal1</strong> is idle<br>
@@ -255,6 +266,7 @@ function initAudio() {
     gainNode.connect(audioCtx.destination);
     v.muted = false;
     audioReady = true;
+    $('audio-hint').classList.remove('show');
     updateVolUI();
     dbg('audio ok');
   } catch(e) { dbg('audio: ' + e.message); }
@@ -263,6 +275,7 @@ function initAudio() {
 function ensureAudio() {
   initAudio();
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  $('audio-hint').classList.remove('show');
 }
 
 // ── VU meter (mic icon vertical bar) ──
@@ -322,8 +335,9 @@ function setActive(on, msg) {
   active = on;
   $('offline').classList.toggle('hidden', on);
   $('dock').style.display = on ? '' : 'none';
-  if (on) { $('rdot').classList.add('on'); resetDim(); }
-  else { $('rdot').classList.remove('on');
+  if (on) { $('rdot').classList.add('on'); resetDim();
+    if (!audioReady) $('audio-hint').classList.add('show');
+  } else { $('rdot').classList.remove('on');
     if (msg) $('off-sub').textContent = msg;
     v.pause(); if (hls) { hls.destroy(); hls = null; }
     v.removeAttribute('src'); v.load();
