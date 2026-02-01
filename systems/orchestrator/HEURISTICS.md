@@ -130,3 +130,12 @@ When you learn something new about building:
 4. Always include the concrete evidence (what happened, what we measured)
 
 *Last updated: 2026-02-01 — Portal1 🌀*
+
+### H8: Monitor Your Own Context
+**Quality degrades nonlinearly (H3) — and that applies to YOU, not just sub-agents.**
+
+On 2026-02-01, the main session hit ~85% context and output degraded to token garbage (`$0 $1 $2`). The agent did not notice or warn the human. The human had to ask "how much context do you have left?" twice.
+
+*Action: Before every tool call in a heavy session, mentally note context pressure. When approaching 70%, proactively tell the human. At 80%, recommend compacting. Don't wait to be asked — that's the whole point of H3.*
+
+Evidence: Two corruption incidents in one session, both caught by human, not agent.
