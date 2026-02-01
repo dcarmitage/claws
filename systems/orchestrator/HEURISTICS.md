@@ -153,3 +153,27 @@ On 2026-02-01, ran a 1.7B LLM inference on arm64 CPU without warning. Process co
 Killed a stuck vsearch process and moved on without announcing it. Human discovered the SIGKILL in system messages and thought context had crashed.
 
 *Action: When killing a process, immediately tell the human: "I killed X because Y. Here's what I'm trying instead." Transparency > speed.*
+
+### H11: Checkpoint After Every Milestone
+**Update BOTH daily memory AND MEMORY.md after every major milestone. Not just one.**
+
+Daily memory is a running log (easy to append). MEMORY.md is curated operational state (requires thought). Under time pressure, the curated update gets skipped. Then the next session boots with stale MEMORY.md.
+
+*Action: After completing a build, experiment, or significant discovery:*
+1. *Append to `memory/YYYY-MM-DD.md` (what happened)*
+2. *Update `MEMORY.md` (what changed about the system's state)*
+3. *`git add && git commit`*
+
+*All three. Every time. No exceptions.*
+
+### H12: End-of-Session Hygiene
+**Before wrapping a session, run a cleanup pass.**
+
+Untracked files accumulate silently. Uncommitted memory updates get lost. The human asks "is everything documented?" and the answer should always be yes without needing to check.
+
+*Action: Before ending a session or compacting:*
+1. *`git status` — anything untracked that matters?*
+2. *`git diff` — any uncommitted changes?*
+3. *Verify MEMORY.md reflects current state*
+4. *Verify daily memory covers today's work*
+5. *Commit and tag if appropriate*
