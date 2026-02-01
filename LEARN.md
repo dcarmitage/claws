@@ -55,6 +55,8 @@ This document is the **seed of a living learning system** — a compressed, toke
 | **Sprites** | sprites.dev | (TBD — agent tooling?) |
 | **Cloudflare** | cloudflare.com | Edge compute, Workers (multi-agent sandbox) |
 | **Telegram** | — | Primary human ↔ agent channel |
+| **QMD** | github.com/tobi/qmd | Local hybrid search engine (BM25 + vector + LLM rerank), all-local GGUF models, MCP server. For knowledge base search. |
+| **jax-js** | github.com/ekzhang/jax-js | JAX-style ML in JavaScript (WebGPU + Wasm). Browser-side inference, no server needed. Future: client-side vision in stream viewer. |
 
 ### Services Running on Portal1
 
