@@ -60,15 +60,27 @@ Compared vague vs precise task briefs:
 
 **Finding:** Precise briefs with exact code produce 100% first-pass success. Vague briefs occasionally need iteration. The extra time writing precise briefs (2-3 min) saves more time in rework.
 
-### Experiment 3: Orchestrator Tool Build (2026-02-01, in progress)
+### Experiment 3: Orchestrator Tool Build (2026-02-01, complete)
 
-Using the orchestrated method to build the orchestrator itself.
-- Spec: `systems/orchestrator/SPEC.md`
-- Metrics will be captured here as the build progresses.
+Used the orchestrated method to build the orchestrator itself (self-referential).
+The build was logged BY the tool being built, starting from task 1 completion.
 
-| Task | Builder Time | Tokens | Pass? | Notes |
-|------|-------------|--------|-------|-------|
-| (recording as we build) | | | | |
+| Task | Builder Time | Pass? | Commit | Notes |
+|------|-------------|-------|--------|-------|
+| build_log.py | 26s | ✅ | 22ec57e | Core logger, used to log subsequent tasks |
+| taskboard.py | 38s | ✅ | a987f7a | Parses real TASKBOARD.md files from today |
+| build_report.py | 40s | ✅ | 1c76ccc | Generates reports from JSONL logs |
+| templates | 14s | ✅ | f2a6a50 | TASKBOARD.md + BRIEF.md templates |
+| integration test | 60s | ✅ | dfd0eef | End-to-end with real build data |
+
+**Total:** 5/5 passed, 2m 58s, tagged `v1.0-orchestrator`
+
+**Aggregate metrics across all 3 builds today:**
+- Total tasks: 13
+- Pass rate: 100% (12/12 completed)
+- Avg task duration: 32s
+- Fastest: 14s (templates)
+- Slowest: 55s (time display rewrite)
 
 ## Key Principles (Evolving)
 
