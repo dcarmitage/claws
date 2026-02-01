@@ -1,0 +1,4 @@
+{"timestamp": "2026-02-01T21:02:58.482924Z", "build_id": "qmd-integration", "event": "build_start"}
+{"timestamp": "2026-02-01T21:08:59.227613Z", "build_id": "qmd-integration", "event": "task_start", "task_id": "task-1", "task_name": "Install and smoke test"}
+{"timestamp": "2026-02-01T21:19:35.476411Z", "build_id": "qmd-integration", "event": "task_done", "task_id": "task-1", "commit": "none", "passed": true, "duration_s": 480, "notes": ""}
+{"timestamp": "2026-02-01T21:28:03.490461Z", "build_id": "qmd-integration", "event": "task_done", "task_id": "task-2", "commit": "none", "passed": true, "duration_s": 300, "notes": ""}

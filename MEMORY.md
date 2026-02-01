@@ -143,3 +143,12 @@ Drive handshake:
 ```
 
 *Last updated: 2026-02-01 by Portal1 🌀*
+
+## Knowledge Search System (QMD)
+- **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
+- **CLI:** `/home/clawd/tools/qmd-search.sh [search|vsearch|reindex|status]`
+- **Index:** 16 markdown files, 40 embedded chunks, 3.3MB SQLite DB
+- **Models:** embeddinggemma 300M at ~/.cache/qmd/models/ (328MB)
+- **Upgrade path:** documented in `systems/qmd/UPGRADE_PATH.md`
+- **Next steps:** Better embedding model (nomic-embed), hybrid BM25+vector fusion, API query expansion
+- **Key finding:** BM25 beats vector search for our well-structured corpus. Vector becomes more valuable as corpus grows.
