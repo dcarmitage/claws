@@ -7,7 +7,7 @@ import { existsSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
-const QMD_DIR = "/tmp/qmd-install";
+const QMD_DIR = "/home/clawd/tools/qmd";
 
 // Parse args
 const args = process.argv.slice(2);

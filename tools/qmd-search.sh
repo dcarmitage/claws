@@ -2,7 +2,7 @@
 # Portal1 Knowledge Search
 # Usage: qmd-search.sh [search|vsearch|status] <query> [-n count] [-c collection]
 export PATH="$HOME/.bun/bin:$PATH"
-QMD_DIR="/tmp/qmd-install"
+QMD_DIR="/home/clawd/tools/qmd"
 
 case "$1" in
   search)

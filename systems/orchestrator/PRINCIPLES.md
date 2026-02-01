@@ -25,3 +25,6 @@
 *These replace the detailed HEURISTICS.md for daily use. The full heuristics (with evidence and examples) remain as reference for when we need to understand WHY a principle exists.*
 
 *Condense further as patterns merge. The goal: few enough to hold in mind, precise enough to act on.*
+
+## Architecture
+11. **Main session orchestrates, sub-agents execute.** The main session writes specs, spawns builders, verifies results, and stays available for human conversation. Sub-agents get one task, fresh context, exact briefs. Never blur these roles.
