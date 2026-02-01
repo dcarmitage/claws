@@ -1,0 +1,14 @@
+[Unit]
+Description=Portal1 Camera Service (Picamera2)
+After=network.target
+
+[Service]
+Type=simple
+User=dcarmitage
+WorkingDirectory=/home/clawd/tools
+ExecStart=/usr/bin/python3 /home/clawd/tools/camservice.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "faster-whisper": {
+      "version": "1.0.4",
+      "installedAt": 1769750426163
+    },
+    "parakeet-stt": {
+      "version": "1.1.0",
+      "installedAt": 1769750427973
+    },
+    "camsnap": {
+      "version": "1.0.0",
+      "installedAt": 1769750429782
+    },
+    "video-subtitles": {
+      "version": "1.0.0",
+      "installedAt": 1769750431508
+    },
+    "ralph-loops": {
+      "version": "1.0.2",
+      "installedAt": 1769975284150
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "portal1-commands",
+  "name": "Portal1 Quick Commands",
+  "description": "Instant /snap, /clip, /listen commands — no LLM needed",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
