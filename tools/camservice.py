@@ -480,14 +480,33 @@ function render(ts) {
     $('rtime').textContent = fmtElapsed(serverElapsed) + behindStr;
   }
 
+  // Buffer bar
   $('tbuf').style.left = '0%'; $('tbuf').style.width = '100%';
+
+  // Scrubber position
   if (mode === 'live' && !dragging) {
-    $('tprog').style.width = '100%'; $('thead').style.left = '100%';
+    $('tprog').style.width = '100%';
+    $('thead').style.left = '100%';
+    $('thead').classList.add('live');
   } else {
-    $('tprog').style.width = (pos*100)+'%'; $('thead').style.left = (pos*100)+'%';
-    $('lpill').textContent = (mode==='paused'?'\u23F8 ':'')+fmtBehind(behind)+' \u00b7 LIVE';
+    $('thead').classList.remove('live');
+    if (avail > 1) {
+      const pos = Math.max(0, Math.min(1, (v.currentTime - start) / avail));
+      $('tprog').style.width = (pos * 100) + '%';
+      $('thead').style.left = (pos * 100) + '%';
+    }
+    // Show behind offset on LIVE pill
+    $('lpill').textContent = (mode==='paused'?'\u23F8 ':'') + fmtBehind(behind) + ' \u00b7 LIVE';
   }
-  $('thead').classList.toggle('live', mode === 'live' && !dragging);
+
+  // Auto-detect drift from live edge
+  if (mode === 'live' && !dragging && behind > 4) {
+    setMode('rewind');
+  }
+  // Auto-return to live when caught up
+  if (mode !== 'live' && mode !== 'paused' && !dragging && behind < 2) {
+    setMode('live');
+  }
 }
 requestAnimationFrame(render);
 
