@@ -137,3 +137,42 @@ This experiment tests several heuristics:
 ---
 
 *This spec follows the scientific method: hypothesis → experiment design → controlled execution → measurement → decision. Every phase has explicit success/failure criteria and a decision gate.*
+
+---
+
+## Phase 1 Results (2026-02-01)
+
+### What Works
+- ✅ Bun 1.3.8 on arm64 — installed, runs fine
+- ✅ QMD installed — all deps including sqlite-vec (no arm64 issues!)
+- ✅ BM25 indexing — 16 files, instant
+- ✅ BM25 search — 0.37s per query, accurate for keyword searches
+- ✅ Embeddings — 40 chunks in 3m 24s (328MB embeddinggemma model, one-time)
+- ✅ Models cached at ~/.cache/qmd/models/
+
+### What's Slow
+- ⚠️ `vsearch` loads 1.7B query expansion model (6.3GB RAM, minutes of CPU)
+- ⚠️ `query` (hybrid) loads both expansion + reranker models
+- Both unusably slow for interactive use on Pi 5 arm64 CPU
+
+### Resource Usage
+| Operation | Time | RAM | CPU |
+|-----------|------|-----|-----|
+| BM25 search | 0.37s | ~50MB | minimal |
+| Embedding (one-time) | 3m 24s | 561MB | 354% (all cores) |
+| vsearch (with expansion) | >3min | 6.3GB | 307% (all cores) |
+
+### Models Downloaded
+| Model | Size | Purpose |
+|-------|------|---------|
+| embeddinggemma-300M-Q8_0 | 328MB | Embeddings |
+| qmd-query-expansion-1.7B-q4_k_m | 1.28GB | Query expansion (too slow) |
+
+### Decision: Proceed with BM25 + pre-computed embeddings, skip query expansion/reranking
+
+BM25 alone is already a massive upgrade over our broken `memory_search`. It's instant and accurate for keyword searches. The vector embeddings are computed and stored — we can use them for similarity search IF we can bypass the query expansion model.
+
+**Next step:** Either:
+1. Modify QMD source to support a `--no-expand` flag for vsearch
+2. Or query the SQLite vector DB directly with just the embedding model (skip the 1.7B LLM)
+3. Or use BM25-only for now (already a win) and add semantic later
