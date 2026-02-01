@@ -156,6 +156,10 @@ WATCH_HTML = r"""<!DOCTYPE html>
   .off-icon{font-size:48px;opacity:.15}
   .off-label{font:13px/1.4 var(--sans);color:var(--hud-dim);text-align:center;max-width:280px}
   .off-label strong{color:var(--hud);font-weight:500}
+  .rec-dot{width:6px;height:6px;border-radius:50%;background:var(--rec);flex-shrink:0}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .rec-dot.on{animation:pulse 1.2s ease-in-out infinite}
+
   .off-refresh{background:none;border:none;color:var(--hud-dim);cursor:pointer;
     font:12px/1 var(--mono);padding:10px 22px;background:var(--hud-bg);border-radius:10px}
   #dbg{margin-top:16px;font:10px/1.4 monospace;color:rgba(255,255,255,0.2);
@@ -179,8 +183,9 @@ WATCH_HTML = r"""<!DOCTYPE html>
           <svg id="play-icon" width="10" height="12" viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
           <svg id="pause-icon" width="10" height="12" viewBox="0 0 10 12" style="display:none"><rect x="0" y="0" width="3" height="12"/><rect x="7" y="0" width="3" height="12"/></svg>
         </button>
+        <div class="rec-dot" id="rdot"></div>
         <!-- Position / Duration -->
-        <span class="time" id="rtime">0:00 / 0:00</span>
+        <span class="time" id="rtime">0:00</span>
         <!-- LIVE pill -->
         <span class="pill pill-live" id="lpill" onclick="goLive()">LIVE</span>
       </div>
@@ -225,6 +230,7 @@ function dbg(s) { console.log(s); const el=$('dbg'); if(el) el.textContent += s 
 
 let hls, active = false, dimTimer;
 let dragging = false, mode = 'live';
+let serverElapsed = 0;
 let micMuted = false;
 let storageMode = 'time'; // 'time' or 'gb'
 let storageFreeBytes = 0, storageFreeGb = '--', storageUsedPct = 0;
@@ -316,8 +322,8 @@ function setActive(on, msg) {
   active = on;
   $('offline').classList.toggle('hidden', on);
   $('dock').style.display = on ? '' : 'none';
-  if (on) { resetDim(); }
-  else {
+  if (on) { $('rdot').classList.add('on'); resetDim(); }
+  else { $('rdot').classList.remove('on');
     if (msg) $('off-sub').textContent = msg;
     v.pause(); if (hls) { hls.destroy(); hls = null; }
     v.removeAttribute('src'); v.load();
@@ -345,6 +351,14 @@ function fmtTime(s) {
   s = Math.max(0, Math.floor(s));
   const m = Math.floor(s / 60), sec = s % 60;
   return m + ':' + String(sec).padStart(2, '0');
+}
+function fmtElapsed(s) {
+  if (s < 0) s = 0;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  return m + ':' + String(sec).padStart(2,'0');
 }
 
 // ── Play/Pause ──
@@ -436,8 +450,13 @@ function render(ts) {
   const behind = Math.max(0, end - v.currentTime);
   const pos = avail > 0.5 ? Math.max(0, Math.min(1, (v.currentTime - start) / avail)) : 1;
 
-  // Time display: position / duration
-  $('rtime').textContent = fmtTime(v.currentTime - start) + ' / ' + fmtTime(avail);
+  // Time display: elapsed from server + behind offset
+  if (mode === 'live') {
+    $('rtime').textContent = fmtElapsed(serverElapsed);
+  } else {
+    const behindStr = behind < 1 ? '' : behind < 60 ? ' \u00b7 -' + Math.round(behind) + 's' : ' \u00b7 -' + Math.floor(behind/60) + ':' + String(Math.floor(behind%60)).padStart(2,'0');
+    $('rtime').textContent = fmtElapsed(serverElapsed) + behindStr;
+  }
 
   $('tbuf').style.left = '0%'; $('tbuf').style.width = '100%';
   if (mode === 'live' && !dragging) {
@@ -513,6 +532,7 @@ async function pollStatus() {
     const r = await fetch(`http://${HOST}/stream/status`);
     const d = await r.json();
     if (d.streaming) {
+      if (d.elapsed_seconds !== undefined) serverElapsed = d.elapsed_seconds;
       if (!hls) { dbg('stream detected'); init(); }
       if (d.mic_muted !== undefined && d.mic_muted !== micMuted) { micMuted = d.mic_muted; updateMicUI(); }
       if (!active) $('off-sub').textContent = 'Connecting\u2026';
