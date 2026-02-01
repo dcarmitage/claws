@@ -6,11 +6,13 @@
 
 ## 🟢 SESSION START (before first reply)
 ```
+□ Run health check: bash tools/health-check.sh
 □ Read MEMORY.md
 □ Read LEARN.md  
 □ Read memory/YYYY-MM-DD.md (today + yesterday)
-□ Read HEURISTICS.md (until internalized — then weekly)
-□ Check session_status for context baseline
+□ Read CHECKLISTS.md (until internalized — then weekly)
+□ Check context: session_status tool
+□ If any health check failures: fix before proceeding
 ```
 
 ## 🔨 PRE-BUILD (before spawning any sub-agent)
