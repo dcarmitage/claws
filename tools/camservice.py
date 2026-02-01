@@ -101,12 +101,13 @@ WATCH_HTML = r"""<!DOCTYPE html>
   /* Scrubber */
   .track{height:32px;display:flex;align-items:center;position:relative;cursor:pointer;touch-action:none}
   .track *{pointer-events:none}
-  .track-bg{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.12);border-radius:2px}
-  .track-buf{position:absolute;height:3px;background:rgba(255,255,255,.18);border-radius:2px}
-  .track-prog{position:absolute;left:0;height:3px;background:var(--rec);border-radius:2px}
+  .track-bg{position:absolute;left:0;right:0;height:4px;background:rgba(255,255,255,.12);border-radius:2px}
+  .track-buf{position:absolute;height:4px;background:rgba(255,255,255,.18);border-radius:2px}
+  .track-prog{position:absolute;left:0;height:4px;background:var(--rec);border-radius:2px}
   .track-head{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#fff;
     transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(0,0,0,.5);transition:transform .1s}
   .track:active .track-head{transform:translate(-50%,-50%) scale(1.35)}
+  .track-head.live{animation:pulse 1.2s ease-in-out infinite;background:var(--rec)}
 
   /* Controls row */
   .controls{display:flex;align-items:center;height:44px;gap:0;
@@ -178,6 +179,12 @@ WATCH_HTML = r"""<!DOCTYPE html>
 </head><body>
 <div id="vf">
   <video id="v" autoplay muted playsinline></video>
+  <svg id="grid" viewBox="0 0 300 200" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .3s">
+    <line x1="100" y1="0" x2="100" y2="200" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>
+    <line x1="200" y1="0" x2="200" y2="200" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>
+    <line x1="0" y1="66.7" x2="300" y2="66.7" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>
+    <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>
+  </svg>
 
   <div id="dock">
     <div class="track" id="track">
@@ -400,24 +407,24 @@ function flash() {
   setTimeout(() => $('pause-flash').style.opacity = '0', 600);
 }
 
-// Tap video = play/pause, double-tap = fullscreen
-let tapTimeout = null, lastTap = 0;
+// Tap video = play/pause, double-tap = fullscreen, triple-tap = grid
+let tapCount = 0, tapTimer = null;
 v.addEventListener('click', e => {
   if (e.target !== v) return;
-  const now = Date.now();
-  if (now - lastTap < 300) {
-    clearTimeout(tapTimeout);
-    lastTap = 0;
-    // Double-tap → fullscreen
-    if (document.fullscreenElement) document.exitFullscreen();
-    else $('vf').requestFullscreen().catch(() => {});
-    return;
-  }
-  lastTap = now;
-  tapTimeout = setTimeout(() => {
-    ensureAudio();
-    togglePlay();
-  }, 300);
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => {
+    if (tapCount === 1) { ensureAudio(); togglePlay(); }
+    else if (tapCount === 2) {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else $('vf').requestFullscreen().catch(() => {});
+    }
+    else if (tapCount >= 3) {
+      const g = $('grid');
+      g.style.opacity = g.style.opacity === '1' ? '0' : '1';
+    }
+    tapCount = 0;
+  }, 350);
 });
 v.addEventListener('play', () => { $('pause-flash').style.opacity = '0'; updatePlayUI(); });
 v.addEventListener('pause', updatePlayUI);
@@ -479,6 +486,7 @@ function render(ts) {
     $('tprog').style.width = (pos*100)+'%'; $('thead').style.left = (pos*100)+'%';
     $('lpill').textContent = (mode==='paused'?'\u23F8 ':'')+fmtBehind(behind)+' \u00b7 LIVE';
   }
+  $('thead').classList.toggle('live', mode === 'live' && !dragging);
 }
 requestAnimationFrame(render);
 
