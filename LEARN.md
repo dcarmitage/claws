@@ -139,6 +139,14 @@ Our approach to building features, refined through the camservice streaming UI p
 | Main session as orchestrator | Main session writes specs + spawns builders, stays available for human conversation |
 | Visual verification loop | Human screenshots the result → we iterate based on what they actually see |
 | Context health monitoring | Watch for token corruption (stray `$` signs, garbled output) — compact or spawn fresh when degraded |
+| Build instrumentation | `build_log.py` captures timing, pass/fail, commits for every task automatically |
+| Three-output rule | Every build produces: code + documentation + learning updates |
+| Heuristics as living doc | `systems/orchestrator/HEURISTICS.md` — rules refined by evidence each session |
+
+#### Decision Principles
+- **Use maximum intelligence, optimize later.** Opus everywhere. Build right first, swap models later.
+- **Capture what, why, and how to improve.** Code alone is incomplete output.
+- **Eval the evals.** After each build, ask "what bug did our tests NOT catch?" and add coverage.
 
 #### The Flow (v2 — evaluated 2026-02-01)
 

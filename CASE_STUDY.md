@@ -92,12 +92,38 @@ The build was logged BY the tool being built, starting from task 1 completion.
 6. **Plans are disposable** — Regenerate from spec rather than patching a drifting plan.
 7. **Visual verification matters** — Automated checks catch syntax errors, not UX problems.
 
+## Eval Framework
+
+### What We Test Now
+| Layer | Method | Catches | Misses |
+|-------|--------|---------|--------|
+| Syntax | `ast.parse`, linters | Parse errors, typos | Everything else |
+| Functional | Endpoint curl, feature grep | Wrong endpoints, missing features | UX, visual, feel |
+| Experiential | Human review | Everything | Takes human time |
+
+### How We Improve Testing
+After each build, ask: **"What bug did our tests NOT catch?"** Then add a test for it.
+
+Bugs our tests missed today:
+- Scrubber bouncing (live buffer jitter) — not caught by any automated test
+- VU meter not showing (AudioContext browser policy) — feature grep said it was there
+- Stream not syncing with real time (HLS config) — endpoints returned "ok"
+
+Each of these became a regression check (grep for correct patterns) going forward.
+
+### Eval Metrics to Track Over Time
+- **False positive rate:** % of builds where tests pass but human finds issues
+- **Task first-pass rate:** % of tasks that pass without rework
+- **Time to first human complaint:** how long before visual QA catches something
+- **Heuristic accuracy:** which heuristics predicted outcomes correctly
+
 ## Future Experiments
 - [ ] Parallel task execution (independent tasks spawned simultaneously)
-- [ ] LLM-as-judge for visual/UX quality
+- [ ] Screenshot-based visual QA (automated capture → human review)
 - [ ] Cross-session learning (builder agents reading past build logs)
-- [ ] Cost optimization (Sonnet for simple tasks, Opus for complex)
-- [ ] Automated taskboard generation from specs
+- [ ] Automated regression test generation from fixed bugs
+- [ ] Build-over-build trend analysis (are we getting faster?)
+- [ ] Failure protocol testing (intentionally break something, measure recovery)
 
 ## Related Files
 - `systems/orchestrator/SPEC.md` — Tool specification
