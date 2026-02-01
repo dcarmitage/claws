@@ -28,7 +28,7 @@ Task 6: Visual QA (orchestrator reviews, no sub-agent)
 
 ## Tasks
 
-### Task 1: Server endpoint additions ⬜
+### Task 1: Server endpoint additions ✅ (4387988)
 **Scope:** Python only. Do NOT touch WATCH_HTML.
 **Changes:**
 - In `storage_info()`: add `"free_bytes": int(stat.f_bfree * stat.f_frsize)` to response dict
@@ -44,7 +44,7 @@ curl -s http://localhost:5080/stream/stop > /dev/null
 ```
 **Commit:** `task 1: add free_bytes and elapsed_seconds to server endpoints`
 
-### Task 2: Time display rewrite ⬜
+### Task 2: Time display rewrite ✅ (7b7dde8)
 **Scope:** WATCH_HTML JavaScript only.
 **Depends on:** Task 1 (elapsed_seconds in status endpoint)
 **Changes:**
@@ -62,7 +62,7 @@ sudo systemctl restart camservice
 Then manually: start stream, open watch page, verify time shows elapsed, scrub back, verify offset appears.
 **Commit:** `task 2: time display shows elapsed + behind offset`
 
-### Task 3: Mic muted icon swap ⬜
+### Task 3: Mic muted icon swap ✅ (1f9ee97)
 **Scope:** WATCH_HTML only (SVG + JS).
 **Depends on:** Task 2 (HTML structure)
 **Changes:**
@@ -80,7 +80,7 @@ sudo systemctl restart camservice
 Then: start stream, open watch page, click mic to mute, verify icon changes to slashed version + dims.
 **Commit:** `task 3: mic icon swaps to slashed SVG when muted`
 
-### Task 4: Audio initialization UX ⬜
+### Task 4: Audio initialization UX ✅ (55413f3)
 **Scope:** WATCH_HTML only (CSS + JS).
 **Depends on:** Task 3 (HTML structure)
 **Changes:**
@@ -97,7 +97,7 @@ sudo systemctl restart camservice
 Then: open watch page fresh (incognito), verify hint appears, tap anywhere, verify hint disappears and audio activates.
 **Commit:** `task 4: audio init hint appears until first tap`
 
-### Task 5: Scrubber + recording dot polish ⬜
+### Task 5: Scrubber + recording dot polish ✅ (18e5f45)
 **Scope:** WATCH_HTML only (CSS + JS).
 **Depends on:** Task 4 (HTML structure)
 **Changes:**
@@ -114,7 +114,7 @@ sudo systemctl restart camservice
 Then: start stream, verify rec dot pulses, verify scrubber head pulses at live edge, scrub back and verify pulse stops, triple-tap for grid.
 **Commit:** `task 5: scrubber polish + recording dot + grid gesture`
 
-### Task 6: Final QA ⬜
+### Task 6: Final QA ✅ (orchestrator)
 **Scope:** Orchestrator (me) reviews the complete result.
 **No sub-agent needed.**
 - Read final HTML
@@ -125,4 +125,9 @@ Then: start stream, verify rec dot pulses, verify scrubber head pulses at live e
 
 ## Status Log
 - `af94b7f` — baseline (known good UI)
-- (tasks will be logged here as completed)
+- `4387988` — task 1: server endpoints (free_bytes + elapsed_seconds)
+- `7b7dde8` — task 2: time display (elapsed + behind offset)
+- `1f9ee97` — task 3: mic icon slash SVG swap
+- `55413f3` — task 4: audio init hint
+- `18e5f45` — task 5: scrubber polish + grid gesture
+- QA pass: 13/13 feature checks, endpoints verified, audio+video confirmed
