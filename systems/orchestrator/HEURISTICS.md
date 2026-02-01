@@ -139,3 +139,17 @@ On 2026-02-01, the main session hit ~85% context and output degraded to token ga
 *Action: Before every tool call in a heavy session, mentally note context pressure. When approaching 70%, proactively tell the human. At 80%, recommend compacting. Don't wait to be asked — that's the whole point of H3.*
 
 Evidence: Two corruption incidents in one session, both caught by human, not agent.
+
+### H9: Announce Risky Operations Before Running
+**If something might fail, take a long time, or consume heavy resources — tell the human FIRST.**
+
+On 2026-02-01, ran a 1.7B LLM inference on arm64 CPU without warning. Process consumed 6.3GB RAM for 3+ minutes. Human saw SIGKILL and thought something catastrophic happened.
+
+*Action: Before any heavy/risky operation, announce: "I'm about to try X, it might take Y, I'll abort if Z." Set explicit timeouts. Give the human a chance to say "wait" or "go ahead."*
+
+### H10: Never Silently Kill a Process
+**Always tell the human what you killed and why. Silent failures erode trust.**
+
+Killed a stuck vsearch process and moved on without announcing it. Human discovered the SIGKILL in system messages and thought context had crashed.
+
+*Action: When killing a process, immediately tell the human: "I killed X because Y. Here's what I'm trying instead." Transparency > speed.*
