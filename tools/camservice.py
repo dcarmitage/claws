@@ -787,9 +787,12 @@ def stream_status():
         return {"streaming": False}
 
     elapsed = None
+    elapsed_seconds = None
     if stream_started_at:
         start = datetime.fromisoformat(stream_started_at)
-        elapsed = str(datetime.now() - start).split(".")[0]
+        delta = datetime.now() - start
+        elapsed = str(delta).split(".")[0]
+        elapsed_seconds = int(delta.total_seconds())
 
     return {
         "streaming": True,
@@ -798,6 +801,7 @@ def stream_status():
         "pid": stream_proc.pid,
         "started_at": stream_started_at,
         "elapsed": elapsed,
+        "elapsed_seconds": elapsed_seconds,
         "mic_muted": mic_muted,
         "hls_url": f"http://portal1.local:{PORT}/stream/live.m3u8" if stream_mode == "hls" else None,
     }
@@ -934,9 +938,11 @@ class Handler(BaseHTTPRequestHandler):
                 free_gb = round(usage.free / (1024**3), 1)
                 total_gb = round(usage.total / (1024**3), 1)
                 used_pct = round((usage.used / usage.total) * 100, 1)
+                stat = os.statvfs(media_root)
                 self._json_response({
                     "free_gb": free_gb, "total_gb": total_gb,
-                    "used_pct": used_pct, "path": media_root
+                    "used_pct": used_pct, "path": media_root,
+                    "free_bytes": int(stat.f_bfree * stat.f_frsize)
                 })
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
