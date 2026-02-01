@@ -311,13 +311,15 @@ function init() {
   mode = 'live';
   if (!Hls.isSupported()) { v.src = streamUrl; v.play(); return; }
   hls = new Hls({
-    backBufferLength: 60,
-    maxBufferLength: 10,
-    maxMaxBufferLength: 20,
+    liveSyncDurationCount: 2,
+    liveMaxLatencyDurationCount: 5,
+    backBufferLength: 30,
+    maxBufferLength: 8,
+    maxMaxBufferLength: 15,
     manifestLoadingMaxRetry: 30,
-    manifestLoadingRetryDelay: 800,
-    levelLoadingRetryDelay: 800,
-    fragLoadingRetryDelay: 800,
+    manifestLoadingRetryDelay: 500,
+    levelLoadingRetryDelay: 500,
+    fragLoadingRetryDelay: 500,
   });
   hls.loadSource(streamUrl);
   hls.attachMedia(v);
@@ -325,10 +327,7 @@ function init() {
     dbg('manifest ok');
     v.play().catch(e => dbg('play: ' + e.message));
     setActive(true);
-    setTimeout(() => {
-      if (v.buffered.length) v.currentTime = v.buffered.end(v.buffered.length - 1) - 0.5;
-      setMode('live');
-    }, 600);
+    setTimeout(() => setMode('live'), 600);
   });
   hls.on(Hls.Events.FRAG_LOADED, () => { if (!active) setActive(true); });
   hls.on(Hls.Events.ERROR, (_, d) => {
@@ -431,9 +430,11 @@ v.addEventListener('pause', updatePlayUI);
 v.addEventListener('playing', () => { if (!active) setActive(true); updatePlayUI(); });
 
 function goLive() {
-  if (hls) delete hls.config.liveSyncDuration;
+  if (hls) {
+    delete hls.config.liveSyncDuration;
+    if (hls.liveSyncPosition) v.currentTime = hls.liveSyncPosition;
+  }
   if (v.paused) v.play();
-  if (v.buffered.length) v.currentTime = v.buffered.end(v.buffered.length - 1) - 0.5;
   setMode('live');
 }
 
