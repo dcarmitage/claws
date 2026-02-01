@@ -91,84 +91,79 @@ WATCH_HTML = r"""<!DOCTYPE html>
   #vf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
   video{width:100%;height:100%;object-fit:contain;cursor:pointer}
 
-  /* Grid */
-  #grid{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
-  #grid.show{opacity:1}
-  #grid line{stroke:rgba(255,255,255,.15);stroke-width:.5}
-
-  /* ── Command Station ── */
+  /* ── Dock ── */
   #dock{position:absolute;bottom:0;left:0;right:0;z-index:10;
-    padding:0 16px env(safe-area-inset-bottom,10px);
-    background:linear-gradient(transparent,rgba(0,0,0,.6) 30%);
+    padding:0 14px env(safe-area-inset-bottom,10px);
+    background:linear-gradient(transparent,rgba(0,0,0,.55) 40%);
     transition:opacity .4s}
-  #dock.dim{opacity:.15}
+  #dock.dim{opacity:.12}
 
   /* Scrubber */
-  .track{height:28px;display:flex;align-items:center;position:relative;cursor:pointer;touch-action:none}
+  .track{height:32px;display:flex;align-items:center;position:relative;cursor:pointer;touch-action:none}
   .track *{pointer-events:none}
   .track-bg{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.12);border-radius:2px}
   .track-buf{position:absolute;height:3px;background:rgba(255,255,255,.18);border-radius:2px}
   .track-prog{position:absolute;left:0;height:3px;background:var(--rec);border-radius:2px}
-  .track-head{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;background:#fff;
+  .track-head{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#fff;
     transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(0,0,0,.5);transition:transform .1s}
-  .track:active .track-head{transform:translate(-50%,-50%) scale(1.3)}
-
-  /* VU meter — same style as storage bar */
-  .vu-bar{width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden;margin:4px 0 6px}
-  .vu-fill{height:100%;border-radius:2px;width:0%;transition:width 80ms linear;background:var(--hud)}
+  .track:active .track-head{transform:translate(-50%,-50%) scale(1.35)}
 
   /* Controls row */
-  .controls{display:flex;align-items:center;justify-content:space-between;height:24px;
-    font:10px/1 var(--mono);letter-spacing:.04em}
-  .ctrl-group{display:flex;align-items:center;gap:8px}
+  .controls{display:flex;align-items:center;height:44px;gap:0;
+    font:11px/1 var(--mono);letter-spacing:.03em}
+  .ctrl-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .ctrl-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
 
-  .rec-dot{width:6px;height:6px;border-radius:50%;background:var(--rec);flex-shrink:0}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .rec-dot.on{animation:pulse 1.2s ease-in-out infinite}
-  .v{font-variant-numeric:tabular-nums;color:var(--hud)}
+  /* Play button */
+  .icon-btn{background:none;border:none;cursor:pointer;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    width:44px;height:44px;-webkit-tap-highlight-color:transparent}
+  .icon-btn svg{fill:var(--hud);transition:fill .15s,opacity .15s}
+  .icon-btn.muted svg{fill:var(--hud-dim);opacity:.3}
 
-  .pill{padding:2px 8px;border-radius:8px;font:10px/1 var(--mono);font-weight:600;
-    letter-spacing:.08em;cursor:pointer;transition:all .15s}
-  .pill-live{background:rgba(255,60,48,.7);color:#fff}
+  /* Time display */
+  .time{font:11px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--hud-dim);
+    white-space:nowrap;letter-spacing:.02em}
+
+  /* LIVE pill */
+  .pill{padding:3px 8px;border-radius:8px;font:10px/1 var(--mono);font-weight:700;
+    letter-spacing:.08em;cursor:pointer;transition:all .15s;flex-shrink:0}
+  .pill-live{background:rgba(255,60,48,.75);color:#fff}
   .pill-behind{background:var(--hud-bg);color:var(--hud-dim)}
-  .pill-behind:hover{background:rgba(255,60,48,.4);color:#fff}
 
-  .dbtn{background:none;border:none;color:var(--hud-dim);cursor:pointer;
-    font:10px/1 var(--mono);letter-spacing:.05em;padding:2px 6px;border-radius:6px;
-    transition:color .2s,background .2s;white-space:nowrap}
-  .dbtn:hover{color:var(--hud);background:rgba(255,255,255,.08)}
-  .dbtn.active{color:var(--hud)}
-  .dbtn.off{color:var(--rec)}
-  .dbtn .dot{display:inline-block;width:5px;height:5px;border-radius:50%;
-    background:currentColor;margin-right:3px;vertical-align:middle}
+  /* Mic button with integrated VU */
+  .mic-wrap{position:relative;display:flex;align-items:center}
+  .mic-vu{position:absolute;right:-1px;bottom:10px;width:3px;height:20px;
+    border-radius:1.5px;overflow:hidden;pointer-events:none}
+  .mic-vu-bg{position:absolute;inset:0;background:rgba(255,255,255,.08);border-radius:1.5px}
+  .mic-vu-fill{position:absolute;bottom:0;left:0;right:0;height:0%;
+    background:var(--hud);border-radius:1.5px;transition:height 80ms linear}
 
-  .storage-bar{width:36px;height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
-  .storage-fill{height:100%;border-radius:2px;background:var(--hud-dim);transition:width .5s}
-  .storage-fill.warn{background:var(--amber)}
-  .storage-fill.crit{background:var(--rec)}
+  /* Storage */
+  .storage{font:10px/1 var(--mono);color:var(--hud-dim);cursor:pointer;
+    font-variant-numeric:tabular-nums;white-space:nowrap;min-width:28px;text-align:right;
+    padding:4px 0;-webkit-tap-highlight-color:transparent}
 
+  /* Pause flash */
   #pause-flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     font-size:56px;opacity:0;transition:opacity .25s;pointer-events:none;
     text-shadow:0 2px 12px rgba(0,0,0,.5)}
 
+  /* Offline */
   #offline{position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;z-index:5}
   #offline.hidden{display:none}
   .off-icon{font-size:48px;opacity:.15}
   .off-label{font:13px/1.4 var(--sans);color:var(--hud-dim);text-align:center;max-width:280px}
   .off-label strong{color:var(--hud);font-weight:500}
-  #offline .dbtn{font-size:12px;padding:8px 20px;background:var(--hud-bg);border-radius:10px}
-  #dbg{margin-top:16px;font:10px/1.4 monospace;color:rgba(255,255,255,0.25);
+  .off-refresh{background:none;border:none;color:var(--hud-dim);cursor:pointer;
+    font:12px/1 var(--mono);padding:10px 22px;background:var(--hud-bg);border-radius:10px}
+  #dbg{margin-top:16px;font:10px/1.4 monospace;color:rgba(255,255,255,0.2);
     max-height:100px;overflow:auto;text-align:left;width:80%;max-width:500px}
 </style>
 </head><body>
 <div id="vf">
   <video id="v" autoplay muted playsinline></video>
-
-  <svg id="grid" viewBox="0 0 300 200" preserveAspectRatio="none">
-    <line x1="100" y1="0" x2="100" y2="200"/><line x1="200" y1="0" x2="200" y2="200"/>
-    <line x1="0" y1="66.7" x2="300" y2="66.7"/><line x1="0" y1="133.3" x2="300" y2="133.3"/>
-  </svg>
 
   <div id="dock">
     <div class="track" id="track">
@@ -177,20 +172,35 @@ WATCH_HTML = r"""<!DOCTYPE html>
       <div class="track-prog" id="tprog"></div>
       <div class="track-head" id="thead"></div>
     </div>
-    <div class="vu-bar"><div class="vu-fill" id="vu-fill"></div></div>
     <div class="controls">
-      <div class="ctrl-group">
-        <div class="rec-dot" id="rdot"></div>
-        <span class="v" id="rtime">00:00:00</span>
+      <div class="ctrl-left">
+        <!-- Play/Pause -->
+        <button class="icon-btn" id="play-btn" onclick="togglePlay()">
+          <svg id="play-icon" width="10" height="12" viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+          <svg id="pause-icon" width="10" height="12" viewBox="0 0 10 12" style="display:none"><rect x="0" y="0" width="3" height="12"/><rect x="7" y="0" width="3" height="12"/></svg>
+        </button>
+        <!-- Position / Duration -->
+        <span class="time" id="rtime">0:00 / 0:00</span>
+        <!-- LIVE pill -->
         <span class="pill pill-live" id="lpill" onclick="goLive()">LIVE</span>
       </div>
-      <div class="ctrl-group">
-        <button class="dbtn" id="mic-btn" onclick="toggleMic()" title="Microphone"><span class="dot"></span>MIC</button>
-        <button class="dbtn" id="vol-btn" onclick="toggleVol()" title="Audio">VOL</button>
-        <button class="dbtn" id="grid-btn" onclick="toggleGrid()" title="Grid">GRID</button>
-        <button class="dbtn" onclick="toggleFS()" title="Fullscreen">FS</button>
-        <span class="v" id="sfree" style="color:var(--hud-dim);font-size:9px">--</span>
-        <div class="storage-bar"><div class="storage-fill" id="sfill"></div></div>
+      <div class="ctrl-right">
+        <!-- Speaker -->
+        <button class="icon-btn" id="vol-btn" onclick="toggleVol()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path id="vol-path" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
+        <!-- Mic with VU -->
+        <div class="mic-wrap">
+          <button class="icon-btn" id="mic-btn" onclick="toggleMic()">
+            <svg width="16" height="18" viewBox="0 0 24 24"><path id="mic-path" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+          </button>
+          <div class="mic-vu">
+            <div class="mic-vu-bg"></div>
+            <div class="mic-vu-fill" id="mic-vu-fill"></div>
+          </div>
+        </div>
+        <!-- Storage -->
+        <div class="storage" id="storage" onclick="toggleStorage()">--</div>
       </div>
     </div>
   </div>
@@ -201,7 +211,7 @@ WATCH_HTML = r"""<!DOCTYPE html>
     <div class="off-icon">&#127744;</div>
     <div class="off-label"><strong>portal1</strong> is idle<br>
       <span id="off-sub">Send <code>/stream start</code> to go live</span></div>
-    <button class="dbtn" onclick="location.reload()">&#x21bb; refresh</button>
+    <button class="off-refresh" onclick="location.reload()">&#x21bb; refresh</button>
     <pre id="dbg"></pre>
   </div>
 </div>
@@ -213,17 +223,16 @@ const v = $('v'), HOST = '__HOST__';
 const streamUrl = `http://${HOST}/stream/live.m3u8`;
 function dbg(s) { console.log(s); const el=$('dbg'); if(el) el.textContent += s + '\n'; }
 
-let hls, active = false, gridOn = false, dimTimer;
+let hls, active = false, dimTimer;
 let dragging = false, mode = 'live';
 let micMuted = false;
+let storageMode = 'time'; // 'time' or 'gb'
+let storageFreeBytes = 0, storageFreeGb = '--', storageUsedPct = 0;
+const BITRATE_ESTIMATE = 2600 * 1024 / 8; // ~2600kbps stream → bytes/sec
 
-// ── Audio analyser ──
-// Route: video → MediaElementSource → analyser → gainNode → speakers
-// Video is unmuted after first click so analyser always gets data.
-// Volume controlled by gainNode (not v.muted).
+// ── Audio ──
 let audioCtx, analyser, audioSrc, gainNode, audioReady = false;
-let speakerOn = false;
-const vuFill = $('vu-fill');
+let speakerOn = true; // default ON per spec
 
 function initAudio() {
   if (audioReady) return;
@@ -233,15 +242,15 @@ function initAudio() {
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.5;
     gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0; // start silent — VOL button turns on
+    gainNode.gain.value = 1; // default ON
     audioSrc = audioCtx.createMediaElementSource(v);
     audioSrc.connect(analyser);
     analyser.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    // Unmute the element so audio data flows through the graph
     v.muted = false;
     audioReady = true;
-    dbg('audio ok — analyser live');
+    updateVolUI();
+    dbg('audio ok');
   } catch(e) { dbg('audio: ' + e.message); }
 }
 
@@ -250,11 +259,12 @@ function ensureAudio() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-// VU meter — update fill width based on RMS level
+// ── VU meter (mic icon vertical bar) ──
 let vuLevel = 0;
+const vuFill = $('mic-vu-fill');
 function updateVU() {
   requestAnimationFrame(updateVU);
-  if (!active || !analyser) { vuFill.style.width = '0%'; return; }
+  if (!active || !analyser || micMuted) { vuFill.style.height = '0%'; return; }
   const data = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(data);
   let sum = 0;
@@ -262,15 +272,14 @@ function updateVU() {
   const avg = sum / data.length / 255;
   vuLevel += (avg - vuLevel) * 0.35;
   const pct = Math.min(100, Math.round(vuLevel * 250));
-  vuFill.style.width = pct + '%';
-  // Color shift: white → amber → red at high levels
+  vuFill.style.height = pct + '%';
   if (pct > 85) vuFill.style.background = 'var(--rec)';
   else if (pct > 60) vuFill.style.background = 'var(--amber)';
   else vuFill.style.background = 'var(--hud)';
 }
 requestAnimationFrame(updateVU);
 
-// ── HLS Player ──
+// ── HLS ──
 function init() {
   if (hls) { hls.destroy(); hls = null; }
   mode = 'live';
@@ -297,7 +306,7 @@ function init() {
   });
   hls.on(Hls.Events.FRAG_LOADED, () => { if (!active) setActive(true); });
   hls.on(Hls.Events.ERROR, (_, d) => {
-    dbg('hls ' + (d.fatal?'FATAL':'') + ' ' + d.details);
+    dbg('hls ' + (d.fatal?'FATAL ':'') + d.details);
     if (d.fatal) { hls.destroy(); hls = null; }
   });
   dbg('hls init');
@@ -307,13 +316,13 @@ function setActive(on, msg) {
   active = on;
   $('offline').classList.toggle('hidden', on);
   $('dock').style.display = on ? '' : 'none';
-  if (on) { $('rdot').classList.add('on'); resetDim(); }
+  if (on) { resetDim(); }
   else {
-    $('rdot').classList.remove('on'); $('rtime').textContent = '--:--:--';
     if (msg) $('off-sub').textContent = msg;
     v.pause(); if (hls) { hls.destroy(); hls = null; }
     v.removeAttribute('src'); v.load();
   }
+  updatePlayUI();
 }
 
 function setMode(m) {
@@ -332,10 +341,19 @@ function fmtBehind(s) {
   if (s < 60) return '-' + Math.round(s) + 's';
   return '-' + Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
 }
+function fmtTime(s) {
+  s = Math.max(0, Math.floor(s));
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m + ':' + String(sec).padStart(2, '0');
+}
 
-// ── Tap play/pause ──
-v.addEventListener('click', e => {
-  if (e.target !== v) return;
+// ── Play/Pause ──
+function updatePlayUI() {
+  const playing = active && !v.paused;
+  $('play-icon').style.display = playing ? 'none' : '';
+  $('pause-icon').style.display = playing ? '' : 'none';
+}
+function togglePlay() {
   ensureAudio();
   if (v.paused) {
     v.play();
@@ -344,12 +362,38 @@ v.addEventListener('click', e => {
     v.pause();
     if (hls) hls.config.liveSyncDuration = 999999;
     setMode('paused');
-    $('pause-flash').style.opacity = '1';
-    setTimeout(() => $('pause-flash').style.opacity = '0', 700);
+    flash();
   }
+  updatePlayUI();
+}
+
+function flash() {
+  $('pause-flash').style.opacity = '1';
+  setTimeout(() => $('pause-flash').style.opacity = '0', 600);
+}
+
+// Tap video = play/pause, double-tap = fullscreen
+let tapTimeout = null, lastTap = 0;
+v.addEventListener('click', e => {
+  if (e.target !== v) return;
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    clearTimeout(tapTimeout);
+    lastTap = 0;
+    // Double-tap → fullscreen
+    if (document.fullscreenElement) document.exitFullscreen();
+    else $('vf').requestFullscreen().catch(() => {});
+    return;
+  }
+  lastTap = now;
+  tapTimeout = setTimeout(() => {
+    ensureAudio();
+    togglePlay();
+  }, 300);
 });
-v.addEventListener('play', () => $('pause-flash').style.opacity = '0');
-v.addEventListener('playing', () => { if (!active) setActive(true); });
+v.addEventListener('play', () => { $('pause-flash').style.opacity = '0'; updatePlayUI(); });
+v.addEventListener('pause', updatePlayUI);
+v.addEventListener('playing', () => { if (!active) setActive(true); updatePlayUI(); });
 
 function goLive() {
   if (hls) delete hls.config.liveSyncDuration;
@@ -390,25 +434,40 @@ function render(ts) {
   const start = v.buffered.start(0);
   const avail = end - start;
   const behind = Math.max(0, end - v.currentTime);
+  const pos = avail > 0.5 ? Math.max(0, Math.min(1, (v.currentTime - start) / avail)) : 1;
+
+  // Time display: position / duration
+  $('rtime').textContent = fmtTime(v.currentTime - start) + ' / ' + fmtTime(avail);
+
   $('tbuf').style.left = '0%'; $('tbuf').style.width = '100%';
   if (mode === 'live' && !dragging) {
     $('tprog').style.width = '100%'; $('thead').style.left = '100%';
   } else {
-    const pos = avail > 0.5 ? Math.max(0, Math.min(1, (v.currentTime - start) / avail)) : 1;
     $('tprog').style.width = (pos*100)+'%'; $('thead').style.left = (pos*100)+'%';
     $('lpill').textContent = (mode==='paused'?'\u23F8 ':'')+fmtBehind(behind)+' \u00b7 LIVE';
   }
 }
 requestAnimationFrame(render);
 
-// ── Controls ──
-function toggleGrid() { gridOn=!gridOn; $('grid').classList.toggle('show',gridOn); $('grid-btn').classList.toggle('active',gridOn); }
+// ── Volume ──
+function updateVolUI() {
+  const path = $('vol-path');
+  if (speakerOn) {
+    path.setAttribute('d', 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z');
+    $('vol-btn').querySelector('svg').style.fill = 'var(--hud)';
+  } else {
+    path.setAttribute('d', 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z');
+    $('vol-btn').querySelector('svg').style.fill = 'var(--hud-dim)';
+  }
+}
 function toggleVol() {
   ensureAudio();
   speakerOn = !speakerOn;
   if (gainNode) gainNode.gain.value = speakerOn ? 1 : 0;
-  $('vol-btn').classList.toggle('active', speakerOn);
+  updateVolUI();
 }
+
+// ── Mic ──
 async function toggleMic() {
   try {
     const r = await fetch(`http://${HOST}/stream/mic?mute=${micMuted?'0':'1'}`);
@@ -418,10 +477,26 @@ async function toggleMic() {
   } catch(e) { dbg('mic: '+e.message); }
 }
 function updateMicUI() {
-  $('mic-btn').classList.toggle('off', micMuted);
-  $('mic-btn').innerHTML = micMuted ? 'MIC' : '<span class="dot"></span>MIC';
+  $('mic-btn').classList.toggle('muted', micMuted);
 }
-function toggleFS() { document.fullscreenElement ? document.exitFullscreen() : $('vf').requestFullscreen(); }
+
+// ── Storage ──
+function fmtStorageTime(freeBytes) {
+  if (!freeBytes || freeBytes <= 0) return '--';
+  const secs = freeBytes / BITRATE_ESTIMATE;
+  if (secs < 3600) return '~' + Math.round(secs / 60) + 'm';
+  if (secs < 86400) return '~' + Math.round(secs / 3600) + 'h';
+  return '~' + Math.round(secs / 86400) + 'd';
+}
+function renderStorage() {
+  const el = $('storage');
+  if (storageMode === 'time') {
+    el.textContent = fmtStorageTime(storageFreeBytes);
+  } else {
+    el.textContent = storageFreeGb + 'G';
+  }
+}
+function toggleStorage() { storageMode = storageMode === 'time' ? 'gb' : 'time'; renderStorage(); }
 
 // ── Auto-dim ──
 function resetDim() {
@@ -439,9 +514,8 @@ async function pollStatus() {
     const d = await r.json();
     if (d.streaming) {
       if (!hls) { dbg('stream detected'); init(); }
-      $('rtime').textContent = d.elapsed || '00:00:00';
       if (d.mic_muted !== undefined && d.mic_muted !== micMuted) { micMuted = d.mic_muted; updateMicUI(); }
-      if (!active) $('off-sub').textContent = 'Connecting...';
+      if (!active) $('off-sub').textContent = 'Connecting\u2026';
     } else {
       if (active) setActive(false, 'Stream ended');
     }
@@ -451,9 +525,10 @@ async function pollStorage() {
   try {
     const r = await fetch(`http://${HOST}/storage`);
     const d = await r.json();
-    $('sfree').textContent = d.free_gb+'G';
-    const f=$('sfill'); f.style.width=d.used_pct+'%';
-    f.className='storage-fill'+(d.used_pct>95?' crit':d.used_pct>85?' warn':'');
+    storageFreeGb = d.free_gb;
+    storageFreeBytes = d.free_bytes || d.free_gb * 1073741824;
+    storageUsedPct = d.used_pct;
+    renderStorage();
   } catch(e) {}
 }
 setInterval(pollStatus, 2000);
