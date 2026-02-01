@@ -1,0 +1,12 @@
+{"timestamp": "2026-02-01T20:32:30.121508Z", "build_id": "stream-ui-features", "event": "build_start"}
+{"timestamp": "2026-02-01T20:32:30.160433Z", "build_id": "stream-ui-features", "event": "task_start", "task_id": "task-1", "task_name": "Server endpoints"}
+{"timestamp": "2026-02-01T20:32:30.200511Z", "build_id": "stream-ui-features", "event": "task_done", "task_id": "task-1", "commit": "4387988", "passed": true, "duration_s": 39, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.239405Z", "build_id": "stream-ui-features", "event": "task_start", "task_id": "task-2", "task_name": "Time display"}
+{"timestamp": "2026-02-01T20:32:30.279289Z", "build_id": "stream-ui-features", "event": "task_done", "task_id": "task-2", "commit": "7b7dde8", "passed": true, "duration_s": 55, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.318060Z", "build_id": "stream-ui-features", "event": "task_start", "task_id": "task-3", "task_name": "Mic icon slash"}
+{"timestamp": "2026-02-01T20:32:30.358281Z", "build_id": "stream-ui-features", "event": "task_done", "task_id": "task-3", "commit": "1f9ee97", "passed": true, "duration_s": 23, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.398521Z", "build_id": "stream-ui-features", "event": "task_start", "task_id": "task-4", "task_name": "Audio init hint"}
+{"timestamp": "2026-02-01T20:32:30.438497Z", "build_id": "stream-ui-features", "event": "task_done", "task_id": "task-4", "commit": "55413f3", "passed": true, "duration_s": 42, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.477422Z", "build_id": "stream-ui-features", "event": "task_start", "task_id": "task-5", "task_name": "Scrubber polish"}
+{"timestamp": "2026-02-01T20:32:30.517315Z", "build_id": "stream-ui-features", "event": "task_done", "task_id": "task-5", "commit": "18e5f45", "passed": true, "duration_s": 38, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.556241Z", "build_id": "stream-ui-features", "event": "summary", "tasks_started": 5, "tasks_passed": 5, "tasks_failed": 0, "total_duration_s": 197}

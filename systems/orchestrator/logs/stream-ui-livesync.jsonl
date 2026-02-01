@@ -1,0 +1,8 @@
+{"timestamp": "2026-02-01T20:32:30.595797Z", "build_id": "stream-ui-livesync", "event": "build_start"}
+{"timestamp": "2026-02-01T20:32:30.634138Z", "build_id": "stream-ui-livesync", "event": "task_start", "task_id": "fix-1", "task_name": "HLS config tuning"}
+{"timestamp": "2026-02-01T20:32:30.672714Z", "build_id": "stream-ui-livesync", "event": "task_done", "task_id": "fix-1", "commit": "23dc5ff", "passed": true, "duration_s": 25, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.710837Z", "build_id": "stream-ui-livesync", "event": "task_start", "task_id": "fix-2", "task_name": "Scrubber stability"}
+{"timestamp": "2026-02-01T20:32:30.750432Z", "build_id": "stream-ui-livesync", "event": "task_done", "task_id": "fix-2", "commit": "9b847ea", "passed": true, "duration_s": 25, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.791487Z", "build_id": "stream-ui-livesync", "event": "task_start", "task_id": "fix-3", "task_name": "Stall recovery"}
+{"timestamp": "2026-02-01T20:32:30.830712Z", "build_id": "stream-ui-livesync", "event": "task_done", "task_id": "fix-3", "commit": "e41992d", "passed": true, "duration_s": 20, "notes": ""}
+{"timestamp": "2026-02-01T20:32:30.870712Z", "build_id": "stream-ui-livesync", "event": "summary", "tasks_started": 3, "tasks_passed": 3, "tasks_failed": 0, "total_duration_s": 70}

@@ -1,0 +1,12 @@
+{"timestamp": "2026-02-01T20:29:46.887550Z", "build_id": "orchestrator-v1", "event": "build_start"}
+{"timestamp": "2026-02-01T20:29:46.936921Z", "build_id": "orchestrator-v1", "event": "task_start", "task_id": "task-1", "task_name": "build_log.py"}
+{"timestamp": "2026-02-01T20:29:46.985944Z", "build_id": "orchestrator-v1", "event": "task_done", "task_id": "task-1", "commit": "22ec57e", "passed": true, "duration_s": 26, "notes": ""}
+{"timestamp": "2026-02-01T20:29:50.662656Z", "build_id": "orchestrator-v1", "event": "task_start", "task_id": "task-2", "task_name": "taskboard.py"}
+{"timestamp": "2026-02-01T20:30:46.721353Z", "build_id": "orchestrator-v1", "event": "task_done", "task_id": "task-2", "commit": "a987f7a", "passed": true, "duration_s": 38, "notes": ""}
+{"timestamp": "2026-02-01T20:30:46.764675Z", "build_id": "orchestrator-v1", "event": "task_start", "task_id": "task-3", "task_name": "build_report.py"}
+{"timestamp": "2026-02-01T20:31:46.402239Z", "build_id": "orchestrator-v1", "event": "task_done", "task_id": "task-3", "commit": "1c76ccc", "passed": true, "duration_s": 40, "notes": ""}
+{"timestamp": "2026-02-01T20:31:46.445531Z", "build_id": "orchestrator-v1", "event": "task_start", "task_id": "task-4", "task_name": "templates"}
+{"timestamp": "2026-02-01T20:32:16.976916Z", "build_id": "orchestrator-v1", "event": "task_done", "task_id": "task-4", "commit": "f2a6a50", "passed": true, "duration_s": 14, "notes": ""}
+{"timestamp": "2026-02-01T20:32:17.020392Z", "build_id": "orchestrator-v1", "event": "task_start", "task_id": "task-5", "task_name": "integration test"}
+{"timestamp": "2026-02-01T20:32:39.341228Z", "build_id": "orchestrator-v1", "event": "task_done", "task_id": "task-5", "commit": "none", "passed": true, "duration_s": 60, "notes": ""}
+{"timestamp": "2026-02-01T20:32:39.396524Z", "build_id": "orchestrator-v1", "event": "summary", "tasks_started": 5, "tasks_passed": 5, "tasks_failed": 0, "total_duration_s": 178}
