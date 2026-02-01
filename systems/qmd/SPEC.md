@@ -176,3 +176,24 @@ BM25 alone is already a massive upgrade over our broken `memory_search`. It's in
 1. Modify QMD source to support a `--no-expand` flag for vsearch
 2. Or query the SQLite vector DB directly with just the embedding model (skip the 1.7B LLM)
 3. Or use BM25-only for now (already a win) and add semantic later
+
+## Phase 2 Results (2026-02-01)
+
+### Lightweight Vector Search: Works!
+- Bypasses 1.7B query expansion model entirely
+- Uses only 300M embeddinggemma model
+- Query time: **1.4-1.7 seconds** (vs 3+ minutes with expansion)
+- RAM: ~500MB (vs 6.3GB)
+
+### Search Quality Comparison
+| Query | BM25 Top Hit | Vector Top Hit | Better |
+|-------|-------------|----------------|--------|
+| "camera service port" | ✅ TOOLS.md | N/T | BM25 |
+| "context cliff" | ❌ No results | ⚠️ HEARTBEAT.md (wrong) | Neither great |
+| "why did one agent many tasks fail" | ✅ CASE_STUDY.md (exact passage) | ⚠️ EVAL.md (close but not best) | BM25 |
+
+### Key Finding
+**BM25 is surprisingly strong for our corpus.** Because our documents are well-structured markdown with clear headings and terms, keyword search hits the right documents. Vector search adds value for concept queries ("context cliff") but the 300M embedding model isn't capturing semantic nuance well enough — it matches surface-level word similarity more than meaning.
+
+### Recommendation
+Use **BM25 as primary**, vector as supplementary signal. For our small, well-organized corpus, keyword search is faster AND more accurate. As the corpus grows, vector search will become more valuable (when exact terms aren't in the documents).
