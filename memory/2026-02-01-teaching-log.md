@@ -130,11 +130,22 @@ Always write session learnings to memory files BEFORE compacting. Once context i
 - Duration: ~1 hour (19:22 - 20:24 EST)
 - Key activities: starter kit creation, SSH push, infra hardening, global rename, 360° status
 
-## What's Next (for the resumed session)
-- Verify Portal2 is reading and responding about its new files
-- Assign Portal2's first research task
-- Test armada-sync.sh in practice (Portal2 edits LEARN.md, pulls back to Portal1)
-- Consider: should Portal2 have a "first task" template ready?
+## What's Next (for the resumed session) — THIS IS THE PRIORITY
+
+**The real teaching hasn't started yet.** Everything so far was infrastructure + setup. The ACTUAL goal is:
+
+### Teach Portal2 to be a 24/7 Researcher
+1. **Collaborative attention-pointing** — Portal1 and Portal2 should work together to decide WHAT to research. Portal1 has domain knowledge and priorities; Portal2 has fresh eyes and curiosity. Together they direct the research focus.
+2. **Documentation methodology** — Teach Portal2 HOW to document findings. Not just raw dumps, but organized, actionable intelligence. Daily digests, categorized by topic, with Mudpaw-relevant highlights.
+3. **Always-on research loop** — Portal2 should be running research continuously. Using heartbeats to check sources, cron for scheduled scans, proactive exploration during idle time. 24/7 means 24/7.
+4. **Knowledge flow** — Portal2 discovers → writes to its files → syncs shared learnings to LEARN.md → Portal1 pulls and integrates. The armada gets smarter together.
+
+### Immediate Actions on Restart
+- Verify Portal2 reads its files and can orient itself
+- Have a "what should we research?" conversation via Armada group
+- Set up Portal2's first research beat (topics, sources, schedule)
+- Teach Portal2 the daily digest format
+- Get the research loop running
 
 ## Open Questions
 - Should Portal2 be able to edit LEARN.md and push changes back? (Currently yes via SSH, but no automated flow)

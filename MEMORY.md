@@ -159,7 +159,7 @@ Drive handshake:
 - **Armada sync tool:** `/home/clawd/tools/armada-sync.sh` (push/pull shared files between agents)
 - **Armada plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
 - **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
-- **Next:** Verify Portal2 reads its files, assign first research task
+- **Next: THE REAL TEACHING STARTS NOW** — Teach Portal2 to be a 24/7 researcher. Collaborative attention-pointing (Portal1 + Portal2 decide what to research together), documentation methodology (how to write actionable digests), and always-on research loop (heartbeats, cron, proactive exploration). Infrastructure is done — this is the actual mission.
 
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
