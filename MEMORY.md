@@ -144,6 +144,18 @@ Drive handshake:
 
 *Last updated: 2026-02-01 by Portal1 🌀*
 
+## The Armada
+- **Portal2 is LIVE** as of 2026-02-01 19:06 EST
+- Hardware: Pi 4 (4GB RAM), IP 192.168.1.44, hostname portal2
+- Software: OpenClaw 2026.1.30, GPT-5.2 (OpenAI Codex OAuth)
+- Telegram: @openclaw_portal2_bot, paired with Mudpaw
+- SSH: `ssh dcarmitage@192.168.1.44` (key auth from Portal1)
+- Group chat: "Armada" on Telegram (Daniel + Portal1 + Portal2)
+- Status: Blank slate — no workspace files, no identity, no shared knowledge yet
+- **Full launch log:** `memory/2026-02-01-armada-launch.md`
+- **Fleet plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
+- **Next:** Onboard Portal2 — identity, workspace, principles, first task
+
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
 - **CLI:** `/home/clawd/tools/qmd-search.sh [search|vsearch|reindex|status]`
