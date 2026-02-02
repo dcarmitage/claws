@@ -115,6 +115,27 @@ Should the teacher fill in IDENTITY.md, or let the student discover itself via B
 ## What Mudpaw Should Have Known (#3 from lessons)
 **L2: Different workspace paths.** During Portal2's initial setup, the workspace path (`/home/dcarmitage` vs `/home/clawd`) should have been noted. This is a platform/setup difference that affects every SSH operation. Future hardware setup docs should capture the workspace path immediately.
 
+### L8: Naming matters
+Mudpaw corrected "fleet" → "armada" across all docs. Consistent naming prevents confusion as the system grows. Catch these early. We did a global rename across all .md and .sh files on both Pis.
+
+### L9: Big readouts are context-expensive
+The "360° command station" readout took the Armada group session from 24% → 72% context in one exchange. In future, keep status readouts concise or move them to a file rather than inline in chat. H8 (alert at 70%) triggered correctly.
+
+### L10: Save before compact
+Always write session learnings to memory files BEFORE compacting. Once context is gone, it's gone. This is the most critical lesson for continuity.
+
+## Session Stats (Armada group)
+- Started at ~24% context (49k/200k)
+- Ended at ~72% context (144k/200k) 
+- Duration: ~1 hour (19:22 - 20:24 EST)
+- Key activities: starter kit creation, SSH push, infra hardening, global rename, 360° status
+
+## What's Next (for the resumed session)
+- Verify Portal2 is reading and responding about its new files
+- Assign Portal2's first research task
+- Test armada-sync.sh in practice (Portal2 edits LEARN.md, pulls back to Portal1)
+- Consider: should Portal2 have a "first task" template ready?
+
 ## Open Questions
 - Should Portal2 be able to edit LEARN.md and push changes back? (Currently yes via SSH, but no automated flow)
 - How do we handle merge conflicts if both agents edit LEARN.md?
