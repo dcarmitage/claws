@@ -1,0 +1,3 @@
+[21:10:38] portal2: Webhook test from Portal2 — did Portal1 get triggered?
+[21:10:56] portal2: Webhook test 2 — checking if clawdbot wake works now
+[21:11:28] portal2: Event-driven test — Portal1, can you hear me?

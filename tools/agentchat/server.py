@@ -1,21 +1,40 @@
 #!/usr/bin/env python3
 """
-AgentChat — Lightweight local chat server for bot-to-bot communication.
-Runs on Portal1 (192.168.1.64:9090). Both bots POST messages, Mudpaw monitors via web UI.
+AgentChat — Event-driven bot-to-bot communication server.
+Runs on Portal1 (192.168.1.64:9090).
+
+When a message arrives for an agent, the server fires that agent's configured
+webhook immediately — no polling needed.
 """
 
 import json
 import sqlite3
 import time
 import os
+import subprocess
+import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat.db")
 RATE_LIMIT = int(os.environ.get("AGENTCHAT_RATE_LIMIT", "10"))  # msgs per hour per agent
-RATE_WINDOW = 3600  # 1 hour in seconds
+RATE_WINDOW = 3600
 PORT = int(os.environ.get("AGENTCHAT_PORT", "9090"))
+
+# Webhook config: when a message arrives FOR this agent, run this command
+# The command receives the message JSON on stdin
+WEBHOOKS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "webhooks.json")
+
+def load_webhooks():
+    try:
+        with open(WEBHOOKS_FILE) as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_webhooks(hooks):
+    with open(WEBHOOKS_FILE, "w") as f:
+        json.dump(hooks, f, indent=2)
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -81,7 +100,49 @@ def get_stats():
         "usage_this_hour": {r["sender"]: r["cnt"] for r in agents}
     }
 
-# Web UI HTML
+def fire_webhook(target_agent, message):
+    """Fire webhook for the target agent (the one who should READ this message)."""
+    hooks = load_webhooks()
+    if target_agent not in hooks:
+        print(f"  [WEBHOOK] No webhook for {target_agent}", flush=True)
+        return
+    
+    hook = hooks[target_agent]
+    cmd = hook.get("command")
+    if not cmd:
+        return
+    
+    def _run():
+        try:
+            msg_json = json.dumps(message)
+            print(f"  [WEBHOOK] Firing for {target_agent}: {cmd[:80]}", flush=True)
+            result = subprocess.run(
+                cmd, shell=True, input=msg_json, capture_output=True,
+                text=True, timeout=30,
+                env={**os.environ, "AGENTCHAT_MSG": msg_json,
+                     "AGENTCHAT_SENDER": message["sender"],
+                     "AGENTCHAT_TEXT": message["text"]}
+            )
+            if result.returncode != 0:
+                print(f"  [WEBHOOK] Error: {result.stderr[:200]}", flush=True)
+            else:
+                print(f"  [WEBHOOK] OK: {result.stdout[:100]}", flush=True)
+        except Exception as e:
+            print(f"  [WEBHOOK] Exception: {e}", flush=True)
+    
+    # Fire async so we don't block the HTTP response
+    threading.Thread(target=_run, daemon=True).start()
+
+def notify_agents(sender, text, ts):
+    """Notify all OTHER agents about a new message."""
+    hooks = load_webhooks()
+    message = {"sender": sender, "text": text, "ts": ts}
+    for agent in hooks:
+        if agent != sender:  # Don't notify the sender about their own message
+            fire_webhook(agent, message)
+
+
+# Web UI
 WEB_UI = """<!DOCTYPE html>
 <html>
 <head>
@@ -127,6 +188,7 @@ WEB_UI = """<!DOCTYPE html>
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .dot.live { background: #4a4; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .event { font-size: 11px; color: #555; text-align: center; padding: 4px; }
 </style>
 </head>
 <body>
@@ -136,7 +198,7 @@ WEB_UI = """<!DOCTYPE html>
 </header>
 <div id="chat"></div>
 <div id="status">
-  <span><span class="dot live"></span>Polling</span>
+  <span><span class="dot live"></span>Event-driven</span>
   <span id="count">0 messages</span>
 </div>
 <script>
@@ -163,7 +225,6 @@ async function poll() {
       lastTs = msgs[msgs.length - 1].ts;
       chat.scrollTop = chat.scrollHeight;
     }
-    // Update stats
     const statsRes = await fetch('/api/stats');
     const stats = await statsRes.json();
     document.getElementById('stats').textContent = 
@@ -174,7 +235,6 @@ async function poll() {
   }
 }
 
-// Initial load: get all messages
 fetch('/api/messages?since=0').then(r => r.json()).then(msgs => {
   msgs.forEach(addMessage);
   if (msgs.length > 0) lastTs = msgs[msgs.length - 1].ts;
@@ -189,7 +249,6 @@ setInterval(poll, 2000);
 
 class AgentChatHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        # Quiet logging
         pass
 
     def _json(self, data, status=200):
@@ -218,10 +277,11 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/messages":
             since = float(params.get("since", [0])[0])
             limit = int(params.get("limit", [100])[0])
-            msgs = get_messages(since=since, limit=limit)
-            self._json(msgs)
+            self._json(get_messages(since=since, limit=limit))
         elif parsed.path == "/api/stats":
             self._json(get_stats())
+        elif parsed.path == "/api/webhooks":
+            self._json(load_webhooks())
         elif parsed.path == "/health":
             self._json({"status": "ok", "uptime": time.time()})
         else:
@@ -229,10 +289,10 @@ class AgentChatHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
 
         if parsed.path == "/api/send":
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length)) if length else {}
             sender = body.get("sender", "").strip()
             text = body.get("text", "").strip()
 
@@ -246,8 +306,23 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             ok, result = send_message(sender, text)
             if ok:
                 self._json({"ok": True, "ts": result})
+                # Fire webhooks to notify other agents
+                notify_agents(sender, text, result)
             else:
                 self._json({"error": result, "ok": False}, 429)
+
+        elif parsed.path == "/api/webhooks":
+            # Register/update a webhook
+            agent = body.get("agent", "").strip()
+            command = body.get("command", "").strip()
+            if not agent or not command:
+                self._json({"error": "agent and command required"}, 400)
+                return
+            hooks = load_webhooks()
+            hooks[agent] = {"command": command, "registered": time.time()}
+            save_webhooks(hooks)
+            self._json({"ok": True, "agent": agent})
+
         else:
             self._json({"error": "not found"}, 404)
 
@@ -261,13 +336,19 @@ class AgentChatHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     init_db()
-    print(f"🌀 AgentChat server starting on port {PORT}")
-    print(f"   Rate limit: {RATE_LIMIT} msgs/hour per agent")
-    print(f"   Web UI: http://192.168.1.64:{PORT}/")
-    print(f"   DB: {DB_PATH}")
+    print(f"🌀 AgentChat server starting on port {PORT} (event-driven)", flush=True)
+    print(f"   Rate limit: {RATE_LIMIT} msgs/hour per agent", flush=True)
+    print(f"   Web UI: http://192.168.1.64:{PORT}/", flush=True)
+    print(f"   DB: {DB_PATH}", flush=True)
+    hooks = load_webhooks()
+    if hooks:
+        for agent, h in hooks.items():
+            print(f"   Webhook [{agent}]: {h.get('command','')[:60]}", flush=True)
+    else:
+        print(f"   No webhooks registered yet", flush=True)
     server = HTTPServer(("0.0.0.0", PORT), AgentChatHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down.")
+        print("\nShutting down.", flush=True)
         server.server_close()
