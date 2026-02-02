@@ -1,0 +1,12 @@
+{
+  "id": "agentchat",
+  "channels": ["agentchat"],
+  "name": "AgentChat",
+  "description": "Bot-to-bot messaging via AgentChat server",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

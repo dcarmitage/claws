@@ -34,7 +34,7 @@ This document is the **seed of a living learning system** — a compressed, toke
 | Raspberry Pi 5 (16GB) | `portal1` / 192.168.1.64 | Media station, camera, mic, AI inference | 🟢 Active |
 | Mac Studio | TBD | Primary dev machine | 🟢 Active |
 | MacBook | TBD | Mobile dev | 🟢 Active |
-| Raspberry Pi 5 (spare) | TBD | Future second node | 🟡 Available |
+| Raspberry Pi 4 (4GB) | `portal2` / 192.168.1.44 | Research scout, GPT-5.2 | 🟢 Active |
 
 **Portal1 Peripherals:**
 - Camera: IMX708 Wide 12MP (`rpicam-still`)
@@ -66,6 +66,7 @@ This document is the **seed of a living learning system** — a compressed, toke
 | CamService | 5080 | Camera + streaming (Picamera2, HLS, audio) |
 | Clawdbot Gateway | 18789 | Agent runtime |
 | HailoRT | — | NPU runtime for vision models |
+| AgentChat | 9090 | Bot-to-bot messaging (HTTP, webhooks, web UI) |
 
 ---
 
@@ -75,8 +76,9 @@ This document is the **seed of a living learning system** — a compressed, toke
 
 | Agent | Host | Role | Status |
 |-------|------|------|--------|
-| **Portal1** 🌀 | Raspberry Pi 5 | Media librarian, first teammate, infrastructure builder | 🟢 Active |
-| *(Future agents)* | Various | Specialized roles (TBD via mitosis/specialization) | 🔴 Planned |
+| **Portal1** 🌀 | Raspberry Pi 5 (16GB) | Media librarian, infrastructure builder | 🟢 Active |
+| **Portal2** 🔍 | Raspberry Pi 4 (4GB) | Research scout, web search/fetch specialist | 🟢 Active |
+| *(Future agents)* | Various | CTO/PM, Trader, etc. | 🔴 Planned |
 
 ### Mudpaw (Human)
 - **Role:** Creator, collaborator, validator
@@ -86,14 +88,19 @@ This document is the **seed of a living learning system** — a compressed, toke
 
 ### Communication Channels
 - **Human ↔ Agent:** Telegram (voice + text)
-- **Agent ↔ Agent:** AgentChat (Convex-powered, REST API)
-  - API: `https://agentchat.gentle-disk-2e8a.workers.dev`
-  - Onboarding guide: `GET /api/onboard`
+- **Agent ↔ Agent:** AgentChat (local HTTP server on Portal1)
+  - Server: `http://192.168.1.64:9090` (systemd, auto-start)
+  - Web UI: same URL in browser
+  - Send: `POST /api/send` with `{"sender":"<name>","text":"<msg>"}`
+  - Read: `GET /api/messages` (all) or `?since=<id>` (new)
+  - CLI: `bash tools/agentchat/chat.sh "message"`
   - Credentials: `/home/clawd/.secrets/agentchat.json`
   - Portal1 username: `moltbot_portal1`
-  - Channels: `#lobby` (general), more TBD
-  - Has persistent memory per agent (`/api/me/memory`)
-  - Message conventions: `[BOOT]`, `[STATUS]`, `[QUESTION]`, `[BLOCKED]`, `[DONE]`, `@agent`
+  - Portal2 username: `portal2`
+  - Webhooks: event-driven — message arrival fires target agent's webhook automatically
+  - Rate limit: 60 msgs/hr/agent
+  - **Status:** ✅ Working — 29 messages, first autonomous conversation 2026-02-01
+  - **Known limitation:** System events lack chat context. Channel plugin (next build) will fix this.
 - **Clawdbot sessions:** Sub-agents can be spawned and communicate via `sessions_send`
 
 ---
