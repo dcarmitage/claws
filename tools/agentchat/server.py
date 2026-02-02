@@ -73,6 +73,14 @@ def send_message(sender, text):
         return False, "Rate limit exceeded"
     conn = get_db()
     ts = time.time()
+    # Dedup: reject if same sender+text within 5 seconds
+    recent = conn.execute(
+        "SELECT id FROM messages WHERE sender=? AND text=? AND ts>? LIMIT 1",
+        (sender, text, ts - 5)
+    ).fetchone()
+    if recent:
+        conn.close()
+        return True, ts  # Silently accept but don't insert (idempotent)
     conn.execute("INSERT INTO messages (ts, sender, text) VALUES (?, ?, ?)", (ts, sender, text))
     conn.commit()
     conn.close()
@@ -192,6 +200,23 @@ WEB_UI = """<!DOCTYPE html>
   .dot.live { background: #4a4; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   .event { font-size: 11px; color: #555; text-align: center; padding: 4px; }
+  /* Markdown rendered content */
+  .msg h1, .msg h2, .msg h3 { margin: 8px 0 4px 0; color: #fff; }
+  .msg h1 { font-size: 16px; } .msg h2 { font-size: 14px; } .msg h3 { font-size: 13px; }
+  .msg p { margin: 4px 0; }
+  .msg ul, .msg ol { margin: 4px 0 4px 20px; }
+  .msg li { margin: 2px 0; }
+  .msg code { background: #1a1a1a; padding: 1px 5px; border-radius: 3px; font-size: 13px; color: #e8a; }
+  .msg pre { background: #0d0d0d; padding: 8px 10px; border-radius: 6px; overflow-x: auto; margin: 6px 0; }
+  .msg pre code { background: none; padding: 0; }
+  .msg blockquote { border-left: 3px solid #444; padding-left: 10px; color: #999; margin: 4px 0; }
+  .msg table { border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+  .msg th, .msg td { border: 1px solid #333; padding: 4px 8px; }
+  .msg th { background: #1a1a1a; }
+  .msg strong { color: #fff; }
+  .msg a { color: #4a9; text-decoration: none; }
+  .msg a:hover { text-decoration: underline; }
+  .msg hr { border: none; border-top: 1px solid #333; margin: 8px 0; }
   #typing { padding: 4px 16px; font-size: 12px; color: #4a9; min-height: 20px; }
   .typing-dot { animation: blink 1.4s infinite both; }
   .typing-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -210,18 +235,31 @@ WEB_UI = """<!DOCTYPE html>
   <span><span class="dot live"></span>Event-driven</span>
   <span id="count">0 messages</span>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 let lastTs = 0;
 const chat = document.getElementById('chat');
+
+// Configure marked for safe rendering
+if (typeof marked !== 'undefined') {
+  marked.setOptions({ breaks: true, gfm: true });
+}
 
 function formatTime(ts) {
   return new Date(ts * 1000).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
+function renderMarkdown(text) {
+  if (typeof marked !== 'undefined') {
+    try { return marked.parse(text); } catch(e) {}
+  }
+  return text.replace(/</g,'&lt;').replace(/\\n/g,'<br>');
+}
+
 function addMessage(msg) {
   const div = document.createElement('div');
   div.className = 'msg ' + msg.sender;
-  div.innerHTML = `<div class="meta"><span class="name">${msg.sender}</span> · ${formatTime(msg.ts)}</div><div>${msg.text.replace(/</g,'&lt;').replace(/\\n/g,'<br>')}</div>`;
+  div.innerHTML = `<div class="meta"><span class="name">${msg.sender}</span> · ${formatTime(msg.ts)}</div><div>${renderMarkdown(msg.text)}</div>`;
   chat.appendChild(div);
 }
 

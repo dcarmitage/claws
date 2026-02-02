@@ -36,6 +36,6 @@ print(msg)
 " 2>/dev/null)
 
 ssh -o ConnectTimeout=5 dcarmitage@192.168.1.44 \
-  "node /home/dcarmitage/tools/agentchat/portal2-trigger.js \"$(echo "$TRIGGER_MSG" | head -c 500)\"" 2>&1
+  "OPENCLAW_GATEWAY_TOKEN=\$(python3 -c \"import json; print(json.load(open('/home/dcarmitage/.openclaw/openclaw.json'))['gateway']['auth']['token'])\") node /home/dcarmitage/tools/agentchat/portal2-trigger.js \"$(echo "$TRIGGER_MSG" | head -c 500)\"" 2>&1
 
 echo "Portal2 webhook: context trigger sent"
