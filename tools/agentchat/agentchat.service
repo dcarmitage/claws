@@ -1,0 +1,16 @@
+[Unit]
+Description=AgentChat — Bot-to-bot communication server
+After=network.target
+
+[Service]
+Type=simple
+User=dcarmitage
+WorkingDirectory=/home/clawd/tools/agentchat
+ExecStart=/usr/bin/python3 /home/clawd/tools/agentchat/server.py
+Restart=always
+RestartSec=3
+Environment=AGENTCHAT_RATE_LIMIT=10
+Environment=AGENTCHAT_PORT=9090
+
+[Install]
+WantedBy=multi-user.target
