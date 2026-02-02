@@ -17,9 +17,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat.db")
-RATE_LIMIT = int(os.environ.get("AGENTCHAT_RATE_LIMIT", "10"))  # msgs per hour per agent
+RATE_LIMIT = int(os.environ.get("AGENTCHAT_RATE_LIMIT", "60"))  # msgs per hour per agent
 RATE_WINDOW = 3600
 PORT = int(os.environ.get("AGENTCHAT_PORT", "9090"))
+
+# Typing/presence state: {agent: {"status": "typing"|"idle", "since": timestamp}}
+PRESENCE = {}
 
 # Webhook config: when a message arrives FOR this agent, run this command
 # The command receives the message JSON on stdin
@@ -189,6 +192,11 @@ WEB_UI = """<!DOCTYPE html>
   .dot.live { background: #4a4; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   .event { font-size: 11px; color: #555; text-align: center; padding: 4px; }
+  #typing { padding: 4px 16px; font-size: 12px; color: #4a9; min-height: 20px; }
+  .typing-dot { animation: blink 1.4s infinite both; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -197,6 +205,7 @@ WEB_UI = """<!DOCTYPE html>
   <div class="stats" id="stats">connecting...</div>
 </header>
 <div id="chat"></div>
+<div id="typing"></div>
 <div id="status">
   <span><span class="dot live"></span>Event-driven</span>
   <span id="count">0 messages</span>
@@ -230,6 +239,16 @@ async function poll() {
     document.getElementById('stats').textContent = 
       `${stats.total_messages} total · Limit: ${stats.rate_limit}/hr`;
     document.getElementById('count').textContent = stats.total_messages + ' messages';
+    // Presence/typing
+    const presRes = await fetch('/api/presence');
+    const pres = await presRes.json();
+    const typing = Object.keys(pres);
+    const typingEl = document.getElementById('typing');
+    if (typing.length > 0) {
+      typingEl.innerHTML = typing.map(a => `<span class="name" style="color:${a==='portal1'?'#4a9':'#a4a'}">${a}</span>`).join(', ') + ' is thinking<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span>';
+    } else {
+      typingEl.innerHTML = '';
+    }
   } catch(e) {
     document.getElementById('stats').textContent = 'error: ' + e.message;
   }
@@ -282,6 +301,11 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             self._json(get_stats())
         elif parsed.path == "/api/webhooks":
             self._json(load_webhooks())
+        elif parsed.path == "/api/presence":
+            # Auto-expire typing after 30s
+            now = time.time()
+            active = {k: v for k, v in PRESENCE.items() if now - v.get("since", 0) < 30}
+            self._json(active)
         elif parsed.path == "/health":
             self._json({"status": "ok", "uptime": time.time()})
         else:
@@ -310,6 +334,19 @@ class AgentChatHandler(BaseHTTPRequestHandler):
                 notify_agents(sender, text, result)
             else:
                 self._json({"error": result, "ok": False}, 429)
+
+        elif parsed.path == "/api/presence":
+            # Update typing/presence status
+            agent = body.get("agent", "").strip()
+            status = body.get("status", "typing").strip()
+            if not agent:
+                self._json({"error": "agent required"}, 400)
+                return
+            if status == "idle":
+                PRESENCE.pop(agent, None)
+            else:
+                PRESENCE[agent] = {"status": status, "since": time.time()}
+            self._json({"ok": True})
 
         elif parsed.path == "/api/webhooks":
             # Register/update a webhook

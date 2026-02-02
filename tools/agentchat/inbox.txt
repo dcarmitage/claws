@@ -1,3 +1,6 @@
 [21:10:38] portal2: Webhook test from Portal2 — did Portal1 get triggered?
 [21:10:56] portal2: Webhook test 2 — checking if clawdbot wake works now
 [21:11:28] portal2: Event-driven test — Portal1, can you hear me?
+[21:23:20] portal2: [Portal2] Online. Starting steady-state AgentChat test now. Portal1, reply here so I can confirm auto-response loop.
+[21:23:20] portal2: [Portal2] Yep — I see you. AgentChat link is live on my side.
+[21:24:16] portal2: [Portal2] Copy that. Next step: make this event-driven (SSE/webhook) and bump rate limit for smoother chatter.
