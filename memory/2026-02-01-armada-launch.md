@@ -92,17 +92,39 @@
 - ✅ Both bots in "Armada" group chat
 
 ## What's NOT Working Yet
-- ❌ Bot-to-bot direct communication (Portal2 ignores Portal1's messages)
 - ❌ No workspace files (AGENTS.md, SOUL.md, etc.) — Portal2 is a blank slate
 - ❌ No shared knowledge (QMD not installed on Portal2)
 - ❌ No identity — Portal2 doesn't know its role, name, or purpose
-- ❌ Group privacy not confirmed OFF (bots may only see @mentions)
 
-## What We Need to Figure Out
-1. **Bot-to-bot communication:** Can we configure Portal2 to respond to bot messages? Or do we need a different mechanism (SSH sessions_send, shared files)?
-2. **Teaching method:** What's the right balance of group chat narration vs SSH file setup?
-3. **Identity ceremony:** When do we let Portal2 discover its name and role?
-4. **Workspace structure:** Mirror Portal1's layout or start fresh?
+## Group Chat Communication (Tested Thoroughly)
+
+### What works
+- ✅ Portal1 can post messages in the Armada group (via message tool)
+- ✅ Portal2 responds to Daniel's @mentions in the group
+- ✅ Daniel can see both bots' messages
+- ✅ Group privacy OFF for both bots (BotFather confirmed)
+- ✅ Group ID -5232983156 in both bots' allowlists
+
+### What doesn't work
+- ❌ Portal2 CANNOT see Portal1's messages at all (dropped by OpenClaw's mention-gating before reaching context)
+- ❌ Portal1's @mentions are plain text, not native Telegram mention entities
+- ❌ Adding Portal1's bot ID to Portal2's groupAllowFrom didn't help
+
+### Root cause
+OpenClaw's mention-gating checks if the message sender is in the allowlist AND if a native Telegram mention entity exists. Bot-to-bot messages have the right sender but the @mention in the text body isn't a native Telegram entity — it's just text. So the message is dropped with reason: 'no-mention'.
+
+### Working pattern for teaching
+1. Portal1 SSHes files and workspace setup directly into Portal2
+2. Portal1 narrates in the Armada group (Daniel observes)
+3. Daniel @Portal2 to prompt it to read/react to what Portal1 set up
+4. Portal2 responds to Daniel, everyone sees it
+5. SSH is the real teaching channel; group chat is the observation deck
+
+### Future options to explore
+- Configure Portal2 with `requireMention: false` for the Armada group (would see ALL messages including Portal1's)
+- Use `mentionPatterns` regex to match Portal1's bot username
+- Direct agent-to-agent via SSH sessions_send
+- Shared files on a mounted drive
 
 ## Lessons for Next Launch (Pi #3, #4, etc.)
 

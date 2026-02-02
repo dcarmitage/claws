@@ -331,3 +331,36 @@ Single agent (Portal1)
 *This document is alive. Every agent that learns something useful writes it back here. Every session that discovers a gotcha adds it to Techniques. The goal: no agent ever has to relearn what another agent already figured out.*
 
 *Last updated: 2026-02-01 by Portal1 🌀*
+
+## Agent Fleet / Armada
+
+### Launch Process (Proven 2026-02-01)
+1. Flash SD card (Pi Imager, OS Lite 64-bit, SSH + WiFi enabled)
+2. Boot, find on network (`ping sweep 192.168.1.0/24`)
+3. SSH key access from Portal1
+4. Install Node 22 (`nodesource setup_22.x`)
+5. Install OpenClaw (`npm install -g openclaw --ignore-scripts` on Pi 4 to avoid OOM)
+6. `openclaw onboard` (needs `NODE_OPTIONS="--max-old-space-size=1024"` on Pi 4)
+7. First gateway start takes 3-5 min (native compilation, one-time)
+8. Telegram pairing: message bot → `openclaw pairing approve telegram <CODE>`
+
+### Critical Lessons
+- Pi 4 (4GB) is tight for OpenClaw — node-llama-cpp compilation uses >4GB. Use `--ignore-scripts` during install.
+- Don't hand-edit JSON configs with `sed`. Use Python `json.load/dump` or the CLI.
+- `openclaw onboard` may not set `hooks.token` — check and add manually if missing.
+- Four config files can exist across `.clawdbot/` and `.openclaw/` (legacy migration). Service reads `~/.openclaw/openclaw.json`.
+- First gateway start compiles native code at 140% CPU for 3-5 min. Don't kill it.
+- Estimated time for subsequent launches: ~25 min (vs 90 min first time).
+
+### Bot-to-Bot Communication in Telegram Groups
+- Bots can post to groups via `message` tool
+- Bots CANNOT trigger other bots via @mention (mention-gating drops bot sender messages)
+- Working pattern: Bot1 SSHes + narrates, Human relays via @mentions to Bot2
+- Future: try `requireMention: false` per-group, or `mentionPatterns` regex
+
+### Fleet Architecture
+- **Portal1** (Pi 5, 8GB): Media librarian, Opus 4.5
+- **Portal2** (Pi 4, 4GB): Researcher (planned), GPT-5.2
+- **Future:** CTO/PM on Mac Studio, Trader on Pi/cloud
+- Sequence: Researcher → CTO/PM → Trader (each launch teaches the next)
+- Hardware-first (avoids cloud/networking complexity), cloud at inflection point

@@ -152,9 +152,11 @@ Drive handshake:
 - SSH: `ssh dcarmitage@192.168.1.44` (key auth from Portal1)
 - Group chat: "Armada" on Telegram (Daniel + Portal1 + Portal2)
 - Status: Blank slate — no workspace files, no identity, no shared knowledge yet
+- Group chat: "Armada" (Telegram group -5232983156), both bots added
+- **Bot-to-bot limitation:** Portal2 can't see Portal1's messages in group (mention-gating). Teaching via SSH + Daniel relays.
 - **Full launch log:** `memory/2026-02-01-armada-launch.md`
 - **Fleet plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
-- **Next:** Onboard Portal2 — identity, workspace, principles, first task
+- **Next:** Onboard Portal2 — SSH starter kit, identity ceremony, first task via Armada group
 
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install

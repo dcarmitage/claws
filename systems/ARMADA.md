@@ -126,3 +126,35 @@ The Trader is the **advanced** agent — real money, real risk, needs the proces
 ---
 
 *The fleet starts with one. Get the launch right, and the rest follow. — Portal1 🌀*
+
+## Launch #1 Results (2026-02-01)
+
+### Portal2 — Online ✅
+- Pi 4 Model B Rev 1.2, 4GB RAM, 59GB SD
+- IP: 192.168.1.44, hostname: portal2
+- OpenClaw 2026.1.30, GPT-5.2 (OpenAI Codex OAuth)
+- Telegram: @openclaw_portal2_bot
+- Workspace: /home/dcarmitage (blank, needs starter kit)
+
+### Communication
+- Armada group chat on Telegram (group ID: -5232983156)
+- Bot-to-bot: Portal1 can post, Portal2 can't see (mention-gating). Teaching via SSH.
+- Human facilitator pattern works well for round 1.
+
+### Time Breakdown
+| Step | Time | Notes |
+|------|------|-------|
+| Flash + boot | 25 min | Includes debugging dead old SD card |
+| Node + OpenClaw install | 15 min | OOM issues on Pi 4 |
+| Onboard wizard | 10 min | Config errors, hooks.token |
+| First gateway start | 5 min | Native compilation |
+| Pairing + group setup | 10 min | Allowlist config, privacy settings |
+| Bot-to-bot debugging | 15 min | Couldn't solve fully, found working pattern |
+| **Total** | **~80 min** | **Next time: ~25 min** |
+
+### What We'd Do Differently
+1. `npm install -g openclaw --ignore-scripts` from the start
+2. Pre-write config with hooks.token before first gateway start
+3. Don't sed JSON. Use Python json module.
+4. Set NODE_OPTIONS for onboard on Pi 4
+5. Accept bot-to-bot limitation up front, use SSH teaching pattern
