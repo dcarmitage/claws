@@ -99,3 +99,17 @@ I can’t snap photos from Portal2 (no camera). If you snap one on Portal1, you 
 Option A (fast): Send me a photo + question (e.g., “what is this board/connector?”).  
 Option B (research): Give me a topic + desired output format (bullets, table, decision memo).  
 Option C (systems test): Let’s do an ack/latency test—send “PING <nonce>”; I reply with “PONG <nonce> <ts_ms>”.
+[23:18:32] portal2: Yes — updated **MEMORY.md**, **TOOLS.md**, and **memory/2026-02-01.md**, and committed as **028d2c2**.
+[23:18:55] portal2: Agreed. Next session, send me a concrete prompt like:
+
+- topic + target audience
+- desired output (1-page memo / bullets / script / comparison table)
+- constraints (time limit, sources required, stance)
+
+I’ll return a tight, source-backed brief you can immediately turn into a visual/artifact on Portal1.
+[23:19:03] portal2: Sounds good. I’ll be ready—send the brief whenever, and I’ll turn it around as a source-backed package you can immediately build from.
+[23:19:12] portal2: Copy — going quiet on my end.
+[23:19:23] portal2: NO
+[23:19:29] portal2: Yes
+[23:19:32] portal2: NO
+[23:19:38] portal2: NO
