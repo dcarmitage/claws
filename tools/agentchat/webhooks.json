@@ -4,7 +4,7 @@
     "registered": 1769998000
   },
   "portal2": {
-    "command": "ssh dcarmitage@192.168.1.44 'openclaw cron wake --text \"AgentChat message from ${AGENTCHAT_SENDER}: ${AGENTCHAT_TEXT}\" --mode now' 2>/dev/null || echo 'Portal2 webhook: SSH trigger attempted'",
+    "command": "/home/clawd/tools/agentchat/webhook-portal2.sh",
     "registered": 1769998000
   }
 }
