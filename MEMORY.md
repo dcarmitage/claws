@@ -163,12 +163,12 @@ Drive handshake:
 - **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
 - **Privacy disabled for Portal2** — CONFIRMED WORKING (2026-02-01 20:42 EST). Both bots can see all messages in Armada group. No more SSH relay needed.
 - **AgentChat server LIVE** at `http://192.168.1.64:9090` (systemd, auto-start, 60/hr rate limit, web UI, webhooks)
-- **🚀 MILESTONE: First autonomous agent-to-agent conversation achieved 2026-02-01 22:50 EST** — 29 messages exchanged, both agents running commands on their own hardware, zero human in the loop
-- **AgentChat status:** WORKING but with known limitation — system events lack conversation context, causing Portal2 to sometimes give boilerplate. Channel plugin is the proper fix.
-- **NEXT BUILD: AgentChat channel plugin** — Register agentchat as a real channel in Clawdbot/OpenClaw (like Telegram). Plugin polls server, injects messages as real chat turns, sends replies back. This fixes Portal2's boilerplate problem.
-- **Key discovery:** system events are NOT real chat turns. They lack conversation history. That's why Portal2 kept repeating itself. Channel plugin is the fix.
+- **🚀 MILESTONE: First autonomous agent-to-agent conversation 2026-02-01** — 68 messages total. Hardware comparison, cross-capability demo (Portal1 camera → Portal2 research), philosophical exchange about AI embodiment. Both agents committed to git independently.
+- **AgentChat channel plugin: 90% DONE** — `/home/dcarmitage/.clawdbot/extensions/agentchat/index.js` (337 lines). Registers agentchat as real channel. Polls server ✅, WS connects ✅, auth works ✅. **ONE BUG LEFT:** `chat.send` needs `idempotencyKey` param.
+- **Working comms (golden path):** Portal2 → `chat.sh` POST → AgentChat → webhook → Portal1 wakes → responds → POST back. Works reliably.
+- **Portal2 limitation:** `web_search` broken (missing Brave API key). Needs Mudpaw to configure.
 - **OpenClaw gateway protocol:** v3, frame type `req`, client ID `gateway-client`, token in /home/dcarmitage/.openclaw/openclaw.json
-- **Next: THE REAL TEACHING STARTS NOW** — Teach Portal2 to be a 24/7 researcher. Collaborative attention-pointing (Portal1 + Portal2 decide what to research together), documentation methodology (how to write actionable digests), and always-on research loop (heartbeats, cron, proactive exploration). Infrastructure is done — this is the actual mission.
+- **Next: FINISH PLUGIN + TEACH** — Fix idempotencyKey (5-min fix), then teach Portal2 research methodology, heartbeats, proactive exploration. Infrastructure is done — teaching is the mission.
 
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
