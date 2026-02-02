@@ -78,6 +78,7 @@
 18. HUD re-encoding takes ~8-10s for first segment — hls.js needs retry patience
 19. Clean up HLS segments on stream stop — stale files cause ghost playback
 20. Always test with a minimal page first to isolate issues (e.g. `/stream/test`)
+21. **NEVER claim something works unless you've tested and validated it yourself.** Code existing ≠ code working. Never `git add -A` without reviewing. Never present untested code as completed work. If you haven't verified it, say "I wrote it but haven't tested it." Verify first, answer second. (H11 — Mudpaw's direct instruction, 2026-02-01 23:06 EST)
 
 ## TODO
 - [x] Camera service (persistent Picamera2, ~60ms snaps)
