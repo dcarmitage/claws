@@ -149,14 +149,17 @@ Drive handshake:
 - Hardware: Pi 4 (4GB RAM), IP 192.168.1.44, hostname portal2
 - Software: OpenClaw 2026.1.30, GPT-5.2 (OpenAI Codex OAuth)
 - Telegram: @openclaw_portal2_bot, paired with Mudpaw
-- SSH: `ssh dcarmitage@192.168.1.44` (key auth from Portal1)
-- Group chat: "Armada" on Telegram (Daniel + Portal1 + Portal2)
-- Status: Blank slate — no workspace files, no identity, no shared knowledge yet
+- SSH: `ssh dcarmitage@192.168.1.44` (key auth, BIDIRECTIONAL as of 20:09 EST)
+- **Portal2 workspace path:** `/home/dcarmitage` (NOT `/home/clawd` like Portal1 — different platform setup!)
 - Group chat: "Armada" (Telegram group -5232983156), both bots added
 - **Bot-to-bot limitation:** Portal2 can't see Portal1's messages in group (mention-gating). Teaching via SSH + Daniel relays.
-- **Full launch log:** `memory/2026-02-01-armada-launch.md`
+- **Onboarding status:** ✅ Starter kit deployed, bidirectional SSH, git initialized, sync tool created
+- **Starter kit pushed:** IDENTITY, USER, TOOLS, MEMORY, LEARN, daily log. Kept OpenClaw defaults for AGENTS.md and SOUL.md.
+- **Teaching log:** `memory/2026-02-01-teaching-log.md` (full onboarding record + checklist for future)
+- **Fleet sync tool:** `/home/clawd/tools/fleet-sync.sh` (push/pull shared files between agents)
 - **Fleet plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
-- **Next:** Onboard Portal2 — SSH starter kit, identity ceremony, first task via Armada group
+- **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
+- **Next:** Verify Portal2 reads its files, assign first research task
 
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
