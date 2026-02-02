@@ -332,7 +332,7 @@ Single agent (Portal1)
 
 *Last updated: 2026-02-01 by Portal1 🌀*
 
-## Agent Fleet / Armada
+## The Armada
 
 ### Launch Process (Proven 2026-02-01)
 1. Flash SD card (Pi Imager, OS Lite 64-bit, SSH + WiFi enabled)
@@ -358,7 +358,7 @@ Single agent (Portal1)
 - Working pattern: Bot1 SSHes + narrates, Human relays via @mentions to Bot2
 - Future: try `requireMention: false` per-group, or `mentionPatterns` regex
 
-### Fleet Architecture
+### Armada Architecture
 - **Portal1** (Pi 5, 8GB): Media librarian, Opus 4.5
 - **Portal2** (Pi 4, 4GB): Researcher (planned), GPT-5.2
 - **Future:** CTO/PM on Mac Studio, Trader on Pi/cloud

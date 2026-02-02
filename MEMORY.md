@@ -156,8 +156,8 @@ Drive handshake:
 - **Onboarding status:** ✅ Starter kit deployed, bidirectional SSH, git initialized, sync tool created
 - **Starter kit pushed:** IDENTITY, USER, TOOLS, MEMORY, LEARN, daily log. Kept OpenClaw defaults for AGENTS.md and SOUL.md.
 - **Teaching log:** `memory/2026-02-01-teaching-log.md` (full onboarding record + checklist for future)
-- **Fleet sync tool:** `/home/clawd/tools/fleet-sync.sh` (push/pull shared files between agents)
-- **Fleet plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
+- **Armada sync tool:** `/home/clawd/tools/armada-sync.sh` (push/pull shared files between agents)
+- **Armada plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
 - **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
 - **Next:** Verify Portal2 reads its files, assign first research task
 

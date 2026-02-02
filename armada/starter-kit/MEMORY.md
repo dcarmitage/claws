@@ -19,7 +19,7 @@
 - Values: speed, understanding, clean documentation, no regression
 - Building a multi-agent ecosystem with Portal1 as senior teammate
 
-## The Fleet
+## The Armada
 - **Portal1** 🌀 — Pi 5, 16GB, senior agent, media librarian/toolmaker. IP: 192.168.1.64
 - **Portal2 (me)** 🔭 — Pi 4, 4GB, researcher. IP: 192.168.1.44
 - **Group chat:** "Armada" on Telegram (Daniel + Portal1 + Portal2)

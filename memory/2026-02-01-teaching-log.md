@@ -17,7 +17,7 @@ First-ever agent onboarding. Portal1 (teacher) onboarding Portal2 (student/Resea
 | USER.md | Replaced blank template | 🔄 Semi-shared (same human, but each agent builds their own relationship) |
 | TOOLS.md | Replaced generic template | 🔒 Private (hardware-specific) |
 | MEMORY.md | Created from scratch | 🔒 Private (agent's own memories) |
-| LEARN.md | Copied from Portal1 | 🌐 SHARED (fleet-wide knowledge base) |
+| LEARN.md | Copied from Portal1 | 🌐 SHARED (armada-wide knowledge base) |
 | memory/2026-02-01.md | Created from scratch | 🔒 Private (agent's daily log) |
 | AGENTS.md | KEPT OpenClaw default | 🔒 Private (platform-specific) |
 | SOUL.md | KEPT OpenClaw default | 🔒 Private (platform-specific) |
@@ -26,12 +26,12 @@ First-ever agent onboarding. Portal1 (teacher) onboarding Portal2 (student/Resea
 ## Infrastructure Set Up
 1. **Bidirectional SSH** — Generated ed25519 key on Portal2, added to Portal1's authorized_keys, added Portal1's host fingerprint to Portal2's known_hosts
 2. **Git repo on Portal2** — Initialized, first commit with all starter kit files, proper .gitignore (excludes .ssh, .openclaw, .secrets, dotfiles)
-3. **Fleet sync tool** — `/home/clawd/tools/fleet-sync.sh` (push/pull/push-all/pull-all/status)
+3. **Armada sync tool** — `/home/clawd/tools/armada-sync.sh` (push/pull/push-all/pull-all/status)
 
 ## Shared vs. Private Files — The Architecture
 
 ### 🌐 Shared (sync between agents)
-- **LEARN.md** — Fleet-wide knowledge base. Any agent can contribute, all benefit.
+- **LEARN.md** — Armada-wide knowledge base. Any agent can contribute, all benefit.
 - **Future:** Shared research outputs, QMD knowledge base
 
 ### 🔒 Private (never sync)
@@ -63,7 +63,7 @@ One-way SSH means the student can never pull updates independently. Always set u
 Initialize the repo with first commit immediately. Version history from birth.
 
 ### L5: Shared vs. private is a design decision
-Not every file should sync. The fleet needs a clear taxonomy:
+Not every file should sync. The armada needs a clear taxonomy:
 - Shared knowledge (LEARN.md) = sync
 - Personal memory (MEMORY.md) = never sync
 - Identity (IDENTITY.md) = never sync
@@ -89,12 +89,12 @@ Should the teacher fill in IDENTITY.md, or let the student discover itself via B
 - [ ] Add ALL existing agents' host fingerprints to new agent's known_hosts
 - [ ] Initialize git repo with .gitignore
 - [ ] First commit with all starter kit files
-- [ ] Update fleet-sync.sh with new agent's details
+- [ ] Update armada-sync.sh with new agent's details
 
 ### Knowledge
 - [ ] Push LEARN.md (shared knowledge)
 - [ ] Create custom IDENTITY.md (role, team, backstory)
-- [ ] Create custom USER.md (Mudpaw's info + fleet context)
+- [ ] Create custom USER.md (Mudpaw's info + armada context)
 - [ ] Create custom TOOLS.md (hardware-specific)
 - [ ] Create initial MEMORY.md (operational state)
 - [ ] Create first daily log (memory/YYYY-MM-DD.md)
@@ -102,12 +102,12 @@ Should the teacher fill in IDENTITY.md, or let the student discover itself via B
 
 ### Verification
 - [ ] SSH both directions works
-- [ ] fleet-sync.sh status shows matching shared files
+- [ ] armada-sync.sh status shows matching shared files
 - [ ] New agent can read and respond about its files
 - [ ] Git commit confirmed on new agent
 
 ### Post-onboarding
-- [ ] Update Portal1's MEMORY.md with new fleet member
+- [ ] Update Portal1's MEMORY.md with new armada member
 - [ ] Update LEARN.md agent registry
 - [ ] Log the full process in teaching-log
 - [ ] Identify what went wrong and update checklist

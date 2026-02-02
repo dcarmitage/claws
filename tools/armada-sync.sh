@@ -1,6 +1,6 @@
 #!/bin/bash
-# fleet-sync.sh — Sync shared files between Portal1 and Portal2
-# Usage: ./fleet-sync.sh push|pull [file]
+# armada-sync.sh — Armada sync — shared files between Portal1 and Portal2
+# Usage: ./armada-sync.sh push|pull [file]
 #   push = Portal1 → Portal2
 #   pull = Portal2 → Portal1
 #   file = optional specific file (default: LEARN.md)

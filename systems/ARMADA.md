@@ -1,8 +1,8 @@
-# FLEET.md — Agent Fleet Architecture
+# ARMADA.md — Agent Armada Architecture
 
 *Evaluating which first agent unlocks the most future agents.*
 
-## Target Fleet
+## Target Armada
 
 | Agent | Role | Hardware | Complexity | Dependencies |
 |-------|------|----------|-----------|-------------|
