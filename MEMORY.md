@@ -159,6 +159,10 @@ Drive handshake:
 - **Armada sync tool:** `/home/clawd/tools/armada-sync.sh` (push/pull shared files between agents)
 - **Armada plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
 - **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
+- **Privacy disabled for Portal2** — CONFIRMED WORKING (2026-02-01 20:42 EST). Both bots can see all messages in Armada group. No more SSH relay needed.
+- **NEXT BUILD (POST-COMPACT): Local AgentChat system** — Lightweight synchronous HTTP chat between Portal1 and Portal2. Each Pi runs an endpoint, bots POST messages to each other directly. Real-time, bidirectional, local network only. May swap for Telegram later but start with this. Portal1 builds it, both bots use it.
+  - Portal1: `http://192.168.1.64:9090/message`
+  - Portal2: `http://192.168.1.44:9090/message`
 - **Next: THE REAL TEACHING STARTS NOW** — Teach Portal2 to be a 24/7 researcher. Collaborative attention-pointing (Portal1 + Portal2 decide what to research together), documentation methodology (how to write actionable digests), and always-on research loop (heartbeats, cron, proactive exploration). Infrastructure is done — this is the actual mission.
 
 ## Knowledge Search System (QMD)
