@@ -413,7 +413,7 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         
         # V1 compatibility
         if path == '/api/messages':
-            since = int(float(params.get('since', [0])[0]))
+            since = int(params.get('since', [0])[0])
             messages = get_channel_messages('general', since)
             # Convert to v1 format
             v1_messages = [{'id': m['id'], 'ts': m['created_at'], 'sender': m['sender_name'], 'text': m['content']} for m in messages]
@@ -436,25 +436,9 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         
         if path.startswith('/api/v2/channels/') and '/messages' in path:
             channel_id = path.split('/')[4]
-            since = int(float(params.get('since', [0])[0]))
+            since = int(params.get('since', [0])[0])
             limit = int(params.get('limit', [100])[0])
             return self.send_json(get_channel_messages(channel_id, since, limit))
-        
-        # Create channel
-        if path == '/api/v2/channels':
-            channel_id = data.get('id') or data.get('name', '').lower().replace(' ', '-')
-            name = data.get('name', channel_id)
-            topic = data.get('topic', '')
-            
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR IGNORE INTO channels (id, name, type, topic, created_at)
-                VALUES (?, ?, 'public', ?, ?)
-            """, (channel_id, name, topic, int(__import__('time').time())))
-            conn.commit()
-            conn.close()
-            return self.send_json({'id': channel_id, 'name': name, 'topic': topic})
         
         if path == '/api/v2/tasks':
             status = params.get('status', [None])[0]
@@ -495,22 +479,6 @@ class AgentChatHandler(BaseHTTPRequestHandler):
                 data.get('current_task_id')
             )
             return self.send_json({'ok': True})
-        
-        # Create channel
-        if path == '/api/v2/channels':
-            channel_id = data.get('id') or data.get('name', '').lower().replace(' ', '-')
-            name = data.get('name', channel_id)
-            topic = data.get('topic', '')
-            
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR IGNORE INTO channels (id, name, type, topic, created_at)
-                VALUES (?, ?, 'public', ?, ?)
-            """, (channel_id, name, topic, int(__import__('time').time())))
-            conn.commit()
-            conn.close()
-            return self.send_json({'id': channel_id, 'name': name, 'topic': topic})
         
         if path == '/api/v2/tasks':
             task = create_task(

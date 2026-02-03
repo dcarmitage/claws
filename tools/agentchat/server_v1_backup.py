@@ -1,0 +1,601 @@
+#!/usr/bin/env python3
+"""
+AgentChat — Event-driven bot-to-bot communication server.
+Runs on Portal1 (192.168.1.64:9090).
+
+When a message arrives for an agent, the server fires that agent's configured
+webhook immediately — no polling needed.
+"""
+
+import json
+import sqlite3
+import time
+import os
+import subprocess
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat.db")
+RATE_LIMIT = int(os.environ.get("AGENTCHAT_RATE_LIMIT", "60"))  # msgs per hour per agent
+RATE_WINDOW = 3600
+PORT = int(os.environ.get("AGENTCHAT_PORT", "9090"))
+
+# Typing/presence state: {agent: {"status": "typing"|"idle", "since": timestamp}}
+PRESENCE = {}
+
+# Webhook config: when a message arrives FOR this agent, run this command
+# The command receives the message JSON on stdin
+WEBHOOKS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "webhooks.json")
+
+def load_webhooks():
+    try:
+        with open(WEBHOOKS_FILE) as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_webhooks(hooks):
+    with open(WEBHOOKS_FILE, "w") as f:
+        json.dump(hooks, f, indent=2)
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts REAL NOT NULL,
+            sender TEXT NOT NULL,
+            text TEXT NOT NULL
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ts ON messages(ts)")
+    conn.commit()
+    conn.close()
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def check_rate_limit(sender):
+    conn = get_db()
+    cutoff = time.time() - RATE_WINDOW
+    row = conn.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE sender=? AND ts>?",
+        (sender, cutoff)
+    ).fetchone()
+    conn.close()
+    return row["cnt"] < RATE_LIMIT
+
+def send_message(sender, text):
+    if not check_rate_limit(sender):
+        return False, "Rate limit exceeded"
+    conn = get_db()
+    ts = time.time()
+    # Dedup: reject if same sender+text within 5 seconds
+    recent = conn.execute(
+        "SELECT id FROM messages WHERE sender=? AND text=? AND ts>? LIMIT 1",
+        (sender, text, ts - 5)
+    ).fetchone()
+    if recent:
+        conn.close()
+        return True, ts  # Silently accept but don't insert (idempotent)
+    conn.execute("INSERT INTO messages (ts, sender, text) VALUES (?, ?, ?)", (ts, sender, text))
+    conn.commit()
+    conn.close()
+    return True, ts
+
+def get_messages(since=0, limit=100):
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, ts, sender, text FROM messages WHERE ts>? ORDER BY ts ASC LIMIT ?",
+        (since, limit)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_stats():
+    conn = get_db()
+    total = conn.execute("SELECT COUNT(*) as cnt FROM messages").fetchone()["cnt"]
+    cutoff = time.time() - RATE_WINDOW
+    agents = conn.execute(
+        "SELECT sender, COUNT(*) as cnt FROM messages WHERE ts>? GROUP BY sender",
+        (cutoff,)
+    ).fetchall()
+    conn.close()
+    return {
+        "total_messages": total,
+        "rate_limit": RATE_LIMIT,
+        "rate_window_seconds": RATE_WINDOW,
+        "usage_this_hour": {r["sender"]: r["cnt"] for r in agents}
+    }
+
+# Context store: agents POST their context status, UI reads it
+CONTEXT_STATUS = {}
+
+def get_context_status():
+    """Get last-reported context for all agents."""
+    now = time.time()
+    result = {}
+    for agent, data in CONTEXT_STATUS.items():
+        age = now - data.get("ts", 0)
+        result[agent] = {**data, "age_seconds": round(age), "stale": age > 120}
+    return result
+
+def update_context_status(agent, data):
+    """Agent reports its context usage."""
+    CONTEXT_STATUS[agent] = {
+        "session": data.get("session", ""),
+        "used": data.get("used", 0),
+        "total": data.get("total", 200000),
+        "percent": data.get("percent", 0),
+        "alert": data.get("percent", 0) > 70,
+        "ts": time.time()
+    }
+
+def fire_webhook(target_agent, message):
+    """Fire webhook for the target agent (the one who should READ this message)."""
+    hooks = load_webhooks()
+    if target_agent not in hooks:
+        print(f"  [WEBHOOK] No webhook for {target_agent}", flush=True)
+        return
+    
+    hook = hooks[target_agent]
+    cmd = hook.get("command")
+    if not cmd:
+        return
+    
+    def _run():
+        try:
+            msg_json = json.dumps(message)
+            print(f"  [WEBHOOK] Firing for {target_agent}: {cmd[:80]}", flush=True)
+            result = subprocess.run(
+                cmd, shell=True, input=msg_json, capture_output=True,
+                text=True, timeout=30,
+                env={**os.environ, "AGENTCHAT_MSG": msg_json,
+                     "AGENTCHAT_SENDER": message["sender"],
+                     "AGENTCHAT_TEXT": message["text"]}
+            )
+            if result.returncode != 0:
+                print(f"  [WEBHOOK] Error: {result.stderr[:200]}", flush=True)
+            else:
+                print(f"  [WEBHOOK] OK: {result.stdout[:100]}", flush=True)
+        except Exception as e:
+            print(f"  [WEBHOOK] Exception: {e}", flush=True)
+    
+    # Fire async so we don't block the HTTP response
+    threading.Thread(target=_run, daemon=True).start()
+
+def notify_agents(sender, text, ts):
+    """Notify all OTHER agents about a new message."""
+    hooks = load_webhooks()
+    message = {"sender": sender, "text": text, "ts": ts}
+    for agent in hooks:
+        if agent != sender:  # Don't notify the sender about their own message
+            fire_webhook(agent, message)
+
+
+# Web UI
+WEB_UI = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AgentChat — Armada</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    padding: 12px 16px; background: #111; border-bottom: 1px solid #222;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .stats { font-size: 12px; color: #666; }
+  #context-monitor { display: flex; gap: 12px; padding: 6px 16px; background: #0d0d0d; border-bottom: 1px solid #1a1a1a; font-size: 12px; }
+  .ctx-agent { display: flex; align-items: center; gap: 6px; }
+  .ctx-bar { width: 80px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
+  .ctx-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .ctx-fill.ok { background: #4a9; }
+  .ctx-fill.warn { background: #da4; }
+  .ctx-fill.danger { background: #d44; }
+  #chat {
+    flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .msg {
+    max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px;
+    line-height: 1.5; word-wrap: break-word;
+  }
+  .msg .meta { font-size: 11px; margin-bottom: 4px; opacity: 0.5; }
+  .msg.portal1 { 
+    background: #1a2a1a; border: 1px solid #2a3a2a; align-self: flex-start;
+  }
+  .msg.portal2 { 
+    background: #1a1a2a; border: 1px solid #2a2a3a; align-self: flex-end;
+  }
+  .msg.system {
+    background: #1a1a1a; border: 1px solid #333; align-self: center;
+    font-style: italic; color: #888; font-size: 12px;
+  }
+  .portal1 .name { color: #4a9; }
+  .portal2 .name { color: #a4a; }
+  #status { 
+    padding: 8px 16px; background: #111; border-top: 1px solid #222;
+    font-size: 12px; color: #666; display: flex; justify-content: space-between;
+  }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.live { background: #4a4; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .event { font-size: 11px; color: #555; text-align: center; padding: 4px; }
+  /* Markdown rendered content */
+  .msg h1, .msg h2, .msg h3 { margin: 8px 0 4px 0; color: #fff; }
+  .msg h1 { font-size: 16px; } .msg h2 { font-size: 14px; } .msg h3 { font-size: 13px; }
+  .msg p { margin: 4px 0; }
+  .msg ul, .msg ol { margin: 4px 0 4px 20px; }
+  .msg li { margin: 2px 0; }
+  .msg code { background: #1a1a1a; padding: 1px 5px; border-radius: 3px; font-size: 13px; color: #e8a; }
+  .msg pre { background: #0d0d0d; padding: 8px 10px; border-radius: 6px; overflow-x: auto; margin: 6px 0; }
+  .msg pre code { background: none; padding: 0; }
+  .msg blockquote { border-left: 3px solid #444; padding-left: 10px; color: #999; margin: 4px 0; }
+  .msg table { border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+  .msg th, .msg td { border: 1px solid #333; padding: 4px 8px; }
+  .msg th { background: #1a1a1a; }
+  .msg strong { color: #fff; }
+  .msg a { color: #4a9; text-decoration: none; }
+  .msg a:hover { text-decoration: underline; }
+  .msg hr { border: none; border-top: 1px solid #333; margin: 8px 0; }
+  #typing { padding: 4px 16px; font-size: 12px; color: #4a9; min-height: 20px; }
+  .typing-dot { animation: blink 1.4s infinite both; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌀 AgentChat — Armada</h1>
+  <div class="stats" id="stats">connecting...</div>
+</header>
+<div id="context-monitor">
+  <span style="color:#666">🧠 Context:</span>
+  <div class="ctx-agent"><span class="name" style="color:#4a9">Portal1</span> <div class="ctx-bar"><div class="ctx-fill ok" id="ctx-p1" style="width:0%"></div></div> <span id="ctx-p1-pct" style="color:#666">—</span></div>
+  <div class="ctx-agent"><span class="name" style="color:#a4a">Portal2</span> <div class="ctx-bar"><div class="ctx-fill ok" id="ctx-p2" style="width:0%"></div></div> <span id="ctx-p2-pct" style="color:#666">—</span></div>
+  <button id="ctx-sync" onclick="syncContext()" style="background:#222;border:1px solid #333;color:#888;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;">🔄 sync</button>
+</div>
+<div id="chat"></div>
+<div id="typing"></div>
+<div id="status">
+  <span><span class="dot live"></span>Event-driven</span>
+  <span id="count">0 messages</span>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+let lastTs = 0;
+const chat = document.getElementById('chat');
+
+// Configure marked for safe rendering
+if (typeof marked !== 'undefined') {
+  marked.setOptions({ breaks: true, gfm: true });
+}
+
+function formatTime(ts) {
+  return new Date(ts * 1000).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function renderMarkdown(text) {
+  if (typeof marked !== 'undefined') {
+    try { return marked.parse(text); } catch(e) {}
+  }
+  return text.replace(/</g,'&lt;').replace(/\\n/g,'<br>');
+}
+
+function addMessage(msg) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + msg.sender;
+  div.innerHTML = `<div class="meta"><span class="name">${msg.sender}</span> · ${formatTime(msg.ts)}</div><div>${renderMarkdown(msg.text)}</div>`;
+  chat.appendChild(div);
+}
+
+async function poll() {
+  try {
+    const res = await fetch('/api/messages?since=' + lastTs);
+    const msgs = await res.json();
+    if (msgs.length > 0) {
+      msgs.forEach(addMessage);
+      lastTs = msgs[msgs.length - 1].ts;
+      chat.scrollTop = chat.scrollHeight;
+    }
+    const statsRes = await fetch('/api/stats');
+    const stats = await statsRes.json();
+    document.getElementById('stats').textContent = 
+      `${stats.total_messages} total · Limit: ${stats.rate_limit}/hr`;
+    document.getElementById('count').textContent = stats.total_messages + ' messages';
+    // Presence/typing
+    const presRes = await fetch('/api/presence');
+    const pres = await presRes.json();
+    const typing = Object.keys(pres);
+    const typingEl = document.getElementById('typing');
+    if (typing.length > 0) {
+      typingEl.innerHTML = typing.map(a => `<span class="name" style="color:${a==='portal1'?'#4a9':'#a4a'}">${a}</span>`).join(', ') + ' is thinking<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span>';
+    } else {
+      typingEl.innerHTML = '';
+    }
+  } catch(e) {
+    document.getElementById('stats').textContent = 'error: ' + e.message;
+  }
+}
+
+fetch('/api/messages?since=0').then(r => r.json()).then(msgs => {
+  msgs.forEach(addMessage);
+  if (msgs.length > 0) lastTs = msgs[msgs.length - 1].ts;
+  chat.scrollTop = chat.scrollHeight;
+});
+
+setInterval(poll, 2000);
+
+// Context monitor - poll every 15s
+async function pollContext() {
+  try {
+    const res = await fetch('/api/context');
+    const ctx = await res.json();
+    for (const [agent, data] of Object.entries(ctx)) {
+      const key = agent === 'portal1' ? 'p1' : 'p2';
+      const fill = document.getElementById('ctx-' + key);
+      const label = document.getElementById('ctx-' + key + '-pct');
+      if (data.error) { label.textContent = '?'; continue; }
+      const pct = data.percent || 0;
+      fill.style.width = pct + '%';
+      fill.className = 'ctx-fill ' + (pct > 80 ? 'danger' : pct > 60 ? 'warn' : 'ok');
+      label.textContent = pct + '%';
+      label.style.color = pct > 80 ? '#d44' : pct > 60 ? '#da4' : '#666';
+    }
+  } catch(e) {}
+}
+pollContext();
+setInterval(pollContext, 15000);
+
+async function syncContext() {
+  const btn = document.getElementById('ctx-sync');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    await fetch('/api/context/sync', {method:'POST'});
+    // Wait a moment for agents to report back
+    await new Promise(r => setTimeout(r, 3000));
+    await pollContext();
+  } catch(e) {}
+  btn.textContent = '🔄 sync';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>"""
+
+
+class AgentChatHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+    def _json(self, data, status=200):
+        body = json.dumps(data).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _html(self, html, status=200):
+        body = html.encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+
+        if parsed.path == "/":
+            self._html(WEB_UI)
+        elif parsed.path == "/api/messages":
+            since = float(params.get("since", [0])[0])
+            limit = int(params.get("limit", [100])[0])
+            self._json(get_messages(since=since, limit=limit))
+        elif parsed.path == "/api/stats":
+            self._json(get_stats())
+        elif parsed.path == "/api/webhooks":
+            self._json(load_webhooks())
+        elif parsed.path == "/api/presence":
+            # Auto-expire typing after 30s
+            now = time.time()
+            active = {k: v for k, v in PRESENCE.items() if now - v.get("since", 0) < 30}
+            self._json(active)
+        elif parsed.path == "/api/context":
+            self._json(get_context_status())
+        elif parsed.path == "/api/context/sync":
+            # Trigger context refresh — tell agents to report
+            self._json(get_context_status())
+        elif parsed.path == "/health":
+            self._json({"status": "ok", "uptime": time.time()})
+        else:
+            self._json({"error": "not found"}, 404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+
+        if parsed.path == "/api/send":
+            sender = body.get("sender", "").strip()
+            text = body.get("text", "").strip()
+
+            if not sender or not text:
+                self._json({"error": "sender and text required"}, 400)
+                return
+            if sender not in ("portal1", "portal2", "system"):
+                self._json({"error": "sender must be portal1, portal2, or system"}, 400)
+                return
+
+            ok, result = send_message(sender, text)
+            if ok:
+                self._json({"ok": True, "ts": result})
+                # Fire webhooks to notify other agents
+                notify_agents(sender, text, result)
+            else:
+                self._json({"error": result, "ok": False}, 429)
+
+        elif parsed.path == "/api/presence":
+            # Update typing/presence status
+            agent = body.get("agent", "").strip()
+            status = body.get("status", "typing").strip()
+            if not agent:
+                self._json({"error": "agent required"}, 400)
+                return
+            if status == "idle":
+                PRESENCE.pop(agent, None)
+            else:
+                PRESENCE[agent] = {"status": status, "since": time.time()}
+            self._json({"ok": True})
+
+        elif parsed.path == "/api/webhooks":
+            # Register/update a webhook
+            agent = body.get("agent", "").strip()
+            command = body.get("command", "").strip()
+            if not agent or not command:
+                self._json({"error": "agent and command required"}, 400)
+                return
+            hooks = load_webhooks()
+            hooks[agent] = {"command": command, "registered": time.time()}
+            save_webhooks(hooks)
+            self._json({"ok": True, "agent": agent})
+
+        elif parsed.path == "/api/context":
+            # POST context update from an agent
+            agent = body.get("agent", "").strip()
+            if not agent:
+                self._json({"error": "agent required"}, 400)
+                return
+            update_context_status(agent, body)
+            self._json({"ok": True})
+
+        elif parsed.path == "/api/context/sync":
+            # Directly probe both agents' session data
+            def _sync():
+                import re
+                def parse_sessions(output):
+                    """Parse 'XXk/200k (YY%)' from clawdbot status output.
+                    Returns sessions sorted by recency (first = most recent)."""
+                    sessions = []
+                    for line in output.split("\n"):
+                        m = re.search(r"(\d+)k/(\d+)k\s*\((\d+)%\)", line)
+                        if m:
+                            used = int(m.group(1)) * 1000
+                            total = int(m.group(2)) * 1000
+                            pct = int(m.group(3))
+                            key_m = re.search(r"agent:\S+", line)
+                            key = key_m.group(0).rstrip("…│ ") if key_m else "main"
+                            sessions.append({"session": key, "used": used, "total": total, "percent": pct})
+                    # Prefer agentchat or armada group sessions, then most recent (first in list)
+                    for s in sessions:
+                        if "agentchat" in s["session"] or "armada" in s["session"] or "-1003" in s["session"]:
+                            return s
+                    return sessions[0] if sessions else None
+
+                # Portal1 — local (clawdbot status takes ~10s, give it time)
+                try:
+                    result = subprocess.run(
+                        ["clawdbot", "status"], capture_output=True, text=True, timeout=20
+                    )
+                    data = parse_sessions(result.stdout)
+                    if data:
+                        update_context_status("portal1", data)
+                except: pass
+
+                # Portal1 fallback — parse sessions.json directly
+                if "portal1" not in CONTEXT_STATUS or time.time() - CONTEXT_STATUS.get("portal1", {}).get("ts", 0) > 30:
+                    try:
+                        sess_path = os.path.expanduser("~dcarmitage/.clawdbot/agents/main/sessions/sessions.json")
+                        with open(sess_path) as f:
+                            sess = json.load(f)
+                        best_key, best_tokens = None, 0
+                        for k, v in sess.items():
+                            t = v.get("totalTokens", 0)
+                            if t > best_tokens and ("agentchat" in k or "-1003" in k or k == "agent:main:main"):
+                                best_tokens = t
+                                best_key = k
+                        if best_key:
+                            total = sess[best_key].get("contextTokens", 200000)
+                            pct = round(best_tokens / total * 100) if total else 0
+                            update_context_status("portal1", {"session": best_key, "used": best_tokens, "total": total, "percent": pct})
+                    except: pass
+
+                # Portal2 — via SSH, parse session transcript sizes
+                # (openclaw status hangs, so we estimate from file sizes)
+                try:
+                    result = subprocess.run(
+                        ["ssh", "-o", "ConnectTimeout=3", "-o", "BatchMode=yes",
+                         "dcarmitage@192.168.1.44",
+                         """python3 -c "
+import json, os, glob
+sess_file = '/home/dcarmitage/.openclaw/agents/main/sessions/sessions.json'
+with open(sess_file) as f:
+    d = json.load(f)
+# Find most recent session
+best_key, best_ts = None, 0
+for k, v in d.items():
+    ts = v.get('updatedAt', 0)
+    if ts > best_ts:
+        best_ts, best_key = ts, k
+# Estimate tokens from transcript size (~4 chars per token)
+sid = d.get(best_key, {}).get('sessionId', '')
+tpath = f'/home/dcarmitage/.openclaw/agents/main/sessions/{sid}.jsonl'
+size = os.path.getsize(tpath) if os.path.exists(tpath) else 0
+est_tokens = size // 4
+total = 200000
+pct = min(round(est_tokens / total * 100), 100)
+print(json.dumps({'session': best_key, 'used': est_tokens, 'total': total, 'percent': pct}))
+" """],
+                        capture_output=True, text=True, timeout=10
+                    )
+                    if result.stdout.strip():
+                        data = json.loads(result.stdout.strip())
+                        update_context_status("portal2", data)
+                except: pass
+
+            threading.Thread(target=_sync, daemon=True).start()
+            self._json({"ok": True, "message": "sync triggered"})
+
+        else:
+            self._json({"error": "not found"}, 404)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+
+if __name__ == "__main__":
+    init_db()
+    print(f"🌀 AgentChat server starting on port {PORT} (event-driven)", flush=True)
+    print(f"   Rate limit: {RATE_LIMIT} msgs/hour per agent", flush=True)
+    print(f"   Web UI: http://192.168.1.64:{PORT}/", flush=True)
+    print(f"   DB: {DB_PATH}", flush=True)
+    hooks = load_webhooks()
+    if hooks:
+        for agent, h in hooks.items():
+            print(f"   Webhook [{agent}]: {h.get('command','')[:60]}", flush=True)
+    else:
+        print(f"   No webhooks registered yet", flush=True)
+    server = HTTPServer(("0.0.0.0", PORT), AgentChatHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down.", flush=True)
+        server.server_close()
