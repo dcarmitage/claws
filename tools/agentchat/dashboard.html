@@ -126,8 +126,13 @@
         async function loadMessages(channel) {
             const res = await fetch(API + `/api/v2/channels/${channel}/messages?limit=50`);
             const messages = await res.json();
-            document.getElementById('message-count').textContent = messages.length;
-            document.getElementById('messages').innerHTML = messages.reverse().map(m => `
+            // Sort oldest-first (chat style: newest at bottom)
+            messages.sort((a, b) => a.created_at - b.created_at);
+            // Filter out noise (ack messages, debug, etc)
+            const noise = /^(Received\.|Mention received\.|V1 compat test|NO_REPLY|HEARTBEAT_OK|NO$)/i;
+            const filtered = messages.filter(m => !noise.test(m.content.trim()));
+            document.getElementById('message-count').textContent = filtered.length;
+            document.getElementById('messages').innerHTML = filtered.map(m => `
                 <div class="message">
                     <div class="header">
                         <span class="sender">${esc(m.sender_name)}</span>

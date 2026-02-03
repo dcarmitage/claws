@@ -141,6 +141,9 @@ def post_channel_message(channel_id, sender_id, content, thread_id=None):
     # Parse @mentions and create notifications
     process_mentions(content, msg_id, sender_id)
     
+    # Auto-update sender's heartbeat (they're clearly online if posting)
+    update_agent_heartbeat(sender_id, 'online', None, None)
+    
     # Broadcast via WebSocket
     asyncio.run_coroutine_threadsafe(
         broadcast_message(channel_id, message),
