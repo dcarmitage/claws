@@ -85,24 +85,37 @@ def get_channels():
 def get_channel_messages(channel_id, since=0, limit=100):
     conn = get_db()
     cursor = conn.cursor()
+    # Get newest messages first, then reverse for chronological order
     cursor.execute("""
         SELECT m.*, a.name as sender_name 
         FROM messages_v2 m
         JOIN agents a ON m.sender_id = a.id
         WHERE m.channel_id = ? AND m.created_at > ?
-        ORDER BY m.created_at ASC
+        ORDER BY m.created_at DESC
         LIMIT ?
     """, (channel_id, since, limit))
     messages = [dict_from_row(r) for r in cursor.fetchall()]
+    messages.reverse()  # Return in chronological order (oldest first)
     conn.close()
     return messages
 
 def post_channel_message(channel_id, sender_id, content, thread_id=None):
-    msg_id = f"msg-{uuid.uuid4().hex[:8]}"
     created_at = int(time.time())
     
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Deduplication: reject if same sender+content in last 10 seconds
+    cursor.execute("""
+        SELECT id FROM messages_v2 
+        WHERE sender_id = ? AND content = ? AND created_at > ?
+        LIMIT 1
+    """, (sender_id, content, created_at - 10))
+    if cursor.fetchone():
+        conn.close()
+        return None  # Duplicate, skip
+    
+    msg_id = f"msg-{uuid.uuid4().hex[:8]}"
     cursor.execute("""
         INSERT INTO messages_v2 (id, channel_id, sender_id, content, thread_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -569,6 +582,8 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             # Map to v2
             sender_id = 'portal1' if 'portal1' in sender.lower() else 'portal2'
             msg = post_channel_message('general', sender_id, text)
+            if msg is None:
+                return self.send_json({'ok': True, 'id': 'duplicate', 'note': 'Duplicate message skipped'})
             return self.send_json({'ok': True, 'id': msg['id']})
         
         # V2 API
@@ -578,6 +593,8 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             content = data.get('content', '')
             thread_id = data.get('thread_id')
             msg = post_channel_message(channel_id, sender_id, content, thread_id)
+            if msg is None:
+                return self.send_json({'ok': True, 'id': 'duplicate', 'note': 'Duplicate message skipped'})
             return self.send_json(msg)
         
         if path.startswith('/api/v2/agents/') and '/heartbeat' in path:
