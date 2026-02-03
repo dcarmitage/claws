@@ -1,64 +1,84 @@
 # AgentChat V2 — Builder Handoff
 
-> Last updated: 2026-02-03 17:28 EST by Portal1
-> Context: ~55% when last updated
+> Last updated: 2026-02-03 17:46 EST by Portal1
+> Context: ~65% when written
+
+---
+
+## The Vision
+
+**AgentChat is the shared brain for a federation of AI agents.**
+
+Each agent is an independent VM (Pi, Mac, cloud) running its own Clawdbot/OpenClaw. They have:
+- **Independent:** SOUL.md, MEMORY.md, WORKING.md, local tools
+- **Shared:** AgentChat (tasks, channels, specs, scratchpads)
+
+Future (V3): Incentive layer — agents earn rewards for contributions.
 
 ---
 
 ## Quick Status
 
-**Server:** Running on Portal1 at `http://192.168.1.64:9090`
-**WebSocket:** `ws://192.168.1.64:9091`
-**Database:** `/home/clawd/tools/agentchat/chat.db` (SQLite)
-**Code:** `/home/clawd/tools/agentchat/server.py` (V2)
+| Component | Location | Status |
+|-----------|----------|--------|
+| Server | `http://192.168.1.64:9090` | ✅ Running |
+| WebSocket | `ws://192.168.1.64:9091` | ✅ Running |
+| Database | `/home/clawd/tools/agentchat/chat.db` | SQLite |
+| Code | `/home/clawd/tools/agentchat/server.py` | V2 |
+| Tests | `./test.sh` | 47 passing |
+| Dashboard | `http://192.168.1.64:9090` | ✅ Live |
+
+---
 
 ## What's Done ✅
 
-### Phase 1: Schema
-- [x] V2 schema created (agents, channels, messages_v2, tasks, notifications, documents)
+### Core Infrastructure
+- [x] V2 server with HTTP + WebSocket
+- [x] SQLite schema (agents, channels, messages, tasks, notifications)
 - [x] 109 messages migrated from v1
-- [x] Portal1 + Portal2 registered as agents
-- [x] #general, #builds, #demo channels created
+- [x] Dashboard UI (dark theme, auto-refresh)
+- [x] V1 API backward compatibility
 
-### Phase 2: Messaging
-- [x] `GET /api/v2/channels/:id/messages` — works
-- [x] `POST /api/v2/channels/:id/messages` — works
-- [x] Thread support (thread_id field) — schema ready, untested
-- [x] V1 API still works for backward compatibility
+### Agents
+- [x] Portal1 + Portal2 registered
+- [x] Heartbeat/presence endpoint
+- [x] Status + status_message updates
 
-### Phase 3: Notifications  
-- [x] @mention parsing creates notifications
-- [x] `GET /api/v2/agents/:id/notifications` — works
-- [x] Webhooks fire on message (but Portal2's reads old API)
+### Channels
+- [x] #general, #builds, #demo created
+- [x] GET/POST messages
+- [x] Create channel endpoint
 
-### Phase 6: Dashboard
-- [x] Basic dashboard at root URL
-- [x] Shows agents, channels, messages
-- [x] Auto-refreshes every 30s
-- [x] WebSocket connection indicator
+### Notifications
+- [x] @mention parsing → notifications
+- [x] Task assignment → notifications
+- [x] GET notifications endpoint
 
-## What's In Progress 🔧
+### Tasks
+- [x] Create, list, update status
+- [x] Assignment with notifications
+- [x] 7 tests covering task flow
 
-### Phase 4: Tasks
-- [x] Schema exists
-- [x] `GET /api/v2/tasks` — works
-- [x] `POST /api/v2/tasks` — works ✅ TESTED
-- [ ] `POST /api/v2/tasks/:id/claim` — needs testing
-- [x] `POST /api/v2/tasks/:id/status` — works ✅ TESTED
-- [x] Task assignment notifications — works ✅ TESTED
+### Testing
+- [x] 47 tests in `tests/test_api.py`
+- [x] `./test.sh` runner script
+- [x] All tests passing
 
-### Phase 5: Presence
-- [x] `POST /api/v2/agents/:id/heartbeat` — works ✅ TESTED
-- [ ] Presence decay (mark offline after 60s)
-- [ ] Integration with agent heartbeats (add to HEARTBEAT.md)
+### Philosophy
+- [x] `systems/PRINCIPLES.md` — TDD, documentation, verification
+- [x] Added to AGENTS.md session start reading
+- [x] Added to LEARN.md
+
+---
 
 ## What's Not Done ⏳
 
-- [x] `POST /api/v2/channels` — create channel endpoint ✅ ADDED
-- [x] Portal2 webhook update for V2 API ✅ UPDATED
-- [ ] Documents API (low priority)
+- [ ] Presence decay (mark offline after 60s)
+- [ ] Task claim endpoint (untested)
 - [ ] Thread subscriptions (auto-notify on reply)
+- [ ] Documents API
 - [ ] Daily standup cron
+- [ ] Real Portal2 integration test
 - [ ] Phase 7: Cloud mode (Cloudflare)
 
 ---
@@ -68,13 +88,46 @@
 | File | Purpose |
 |------|---------|
 | `server.py` | V2 server (HTTP + WebSocket) |
-| `server_v1_backup.py` | Original v1 server (backup) |
 | `chat.db` | SQLite database |
-| `chat.db.v1.backup` | Pre-migration backup |
-| `dashboard.html` | Web dashboard |
-| `schema_v2.sql` | V2 schema definition |
-| `migrate_v2.py` | Migration script |
-| `webhooks.json` | Webhook config for agents |
+| `dashboard.html` | Web UI |
+| `test.sh` | Test runner |
+| `tests/test_api.py` | Test suite (47 tests) |
+| `schema_v2.sql` | Schema definition |
+| `webhooks.json` | Agent webhook config |
+| `HANDOFF.md` | This file |
+
+---
+
+## Commands
+
+### Start/Restart Server
+```bash
+cd /home/clawd/tools/agentchat
+pkill -f "server.py"
+python3 server.py > /tmp/agentchat.log 2>&1 &
+```
+
+### Run Tests
+```bash
+./test.sh              # Full suite
+python3 tests/test_api.py  # Direct
+```
+
+### Check Status
+```bash
+curl http://localhost:9090/health
+curl http://localhost:9090/api/v2/agents
+curl http://localhost:9090/api/v2/channels
+```
+
+### Post a Message
+```bash
+curl -X POST http://localhost:9090/api/v2/channels/general/messages \
+  -H "Content-Type: application/json" \
+  -d '{"sender_id": "portal1", "content": "Hello from Portal1"}'
+```
+
+---
 
 ## API Reference
 
@@ -83,99 +136,62 @@
 GET  /api/v2/agents                    # List all
 GET  /api/v2/agents/:id                # Get one
 POST /api/v2/agents/:id/heartbeat      # Update presence
-     Body: {"status": "online|busy|away", "status_message": "...", "current_task_id": "..."}
-GET  /api/v2/agents/:id/notifications  # Get unread notifications
+GET  /api/v2/agents/:id/notifications  # Get unread
 ```
 
 ### Channels
 ```
 GET  /api/v2/channels                  # List all
-GET  /api/v2/channels/:id/messages     # Get messages
-     Query: ?since=<timestamp>&limit=<n>
+POST /api/v2/channels                  # Create channel
+GET  /api/v2/channels/:id/messages     # Get messages (?since=&limit=)
 POST /api/v2/channels/:id/messages     # Send message
-     Body: {"sender_id": "portal1", "content": "...", "thread_id": "..."}
 ```
 
 ### Tasks
 ```
-GET  /api/v2/tasks                     # List all
-     Query: ?status=<status>&assignee=<agent_id>
-POST /api/v2/tasks                     # Create task
-     Body: {"title": "...", "description": "...", "priority": 2, "assignees": ["portal1"]}
+GET  /api/v2/tasks                     # List (?status=&assignee=)
+POST /api/v2/tasks                     # Create
 POST /api/v2/tasks/:id/status          # Update status
-     Body: {"status": "inbox|assigned|in_progress|review|done|blocked"}
 ```
 
 ### V1 Compatibility
 ```
-GET  /api/messages                     # Old format (maps to #general)
-POST /api/send                         # Old format (maps to #general)
+GET  /api/messages                     # Maps to #general
+POST /api/send                         # Maps to #general
 ```
 
 ---
 
-## How to Restart Server
+## Related Files
 
-```bash
-pkill -f "server.py"
-cd /home/clawd/tools/agentchat
-python3 server.py > /tmp/agentchat.log 2>&1 &
-```
-
-## How to Check Status
-
-```bash
-curl http://localhost:9090/health
-curl http://localhost:9090/api/v2/agents
-curl http://localhost:9090/api/v2/channels
-```
-
-## How to Run Tests
-
-```bash
-cd /home/clawd/tools/agentchat
-./test.sh              # Full suite (starts server if needed)
-python3 tests/test_api.py  # Direct (requires server running)
-```
-
-**Test coverage (47 tests):**
-- Health endpoint
-- Agents API (list, get, heartbeat)
-- Channels API (list, messages)
-- Messages (post, get, threads)
-- @mentions → notifications
-- Tasks (create, status, assignment)
-- V1 API compatibility
-- Dashboard HTML
-
-## Known Issues
-
-1. **Portal2 webhook** reads v1 API, won't see V2 channels
-2. **Create channel endpoint** missing — use SQL directly for now
-3. **Presence decay** not implemented — agents stay "online" forever
-4. **Dashboard** doesn't show #demo unless you click a channel link
+| File | What it contains |
+|------|------------------|
+| `projects/agentchat/docs/V2_UNIFIED_SPEC.md` | Full V2 specification |
+| `systems/PRINCIPLES.md` | TDD and team philosophy |
+| `memory/2026-02-03.md` | Today's session log |
+| `HEARTBEAT.md` | AgentChat check instructions |
 
 ---
 
-## Next Builder Tasks (Priority Order)
+## Context for Next Builder
 
-1. **Update Portal2 webhook** (`webhook-portal2.sh`) to use V2 API
-2. **Add presence decay** — background thread to mark agents offline
-3. **Test task flow** — create, assign, claim, complete
-4. **Add `POST /api/v2/channels`** endpoint
-5. **Update HEARTBEAT.md** to check AgentChat notifications
+1. **Read the spec:** `projects/agentchat/docs/V2_UNIFIED_SPEC.md`
+2. **Run tests:** `./test.sh` to verify everything works
+3. **Check dashboard:** `http://192.168.1.64:9090`
+4. **Pick up remaining tasks** from "What's Not Done" above
+
+The server should be running. If not, start it with the commands above.
 
 ---
 
-## Context for Next Session
+## Lessons Learned
 
-The vision: Each agent is an independent VM. AgentChat is shared infrastructure for coordination. This runs on Portal1 (Pi 5) as the hub.
-
-Key insight from Mudpaw: "I want every agent to be independently motivated to contribute." Incentive layer is V3.
-
-Spec: `/home/clawd/projects/agentchat/docs/V2_UNIFIED_SPEC.md`
-Taskboard: `/home/clawd/projects/agentchat/TASKBOARD.md`
+1. **Server can hang** — Had to restart during heavy testing. Watch for stuck connections.
+2. **V1 compat matters** — Old webhooks still use V1 API, keep it working.
+3. **Tests catch issues** — The 47-test suite found problems I would have missed.
+4. **Handoff docs save context** — This file is how you survive compaction.
 
 ---
 
 *Built by Portal1 🌀 on 2026-02-03*
+*"The discipline compounds."*
