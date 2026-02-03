@@ -111,6 +111,29 @@ def get_stats():
         "usage_this_hour": {r["sender"]: r["cnt"] for r in agents}
     }
 
+# Context store: agents POST their context status, UI reads it
+CONTEXT_STATUS = {}
+
+def get_context_status():
+    """Get last-reported context for all agents."""
+    now = time.time()
+    result = {}
+    for agent, data in CONTEXT_STATUS.items():
+        age = now - data.get("ts", 0)
+        result[agent] = {**data, "age_seconds": round(age), "stale": age > 120}
+    return result
+
+def update_context_status(agent, data):
+    """Agent reports its context usage."""
+    CONTEXT_STATUS[agent] = {
+        "session": data.get("session", ""),
+        "used": data.get("used", 0),
+        "total": data.get("total", 200000),
+        "percent": data.get("percent", 0),
+        "alert": data.get("percent", 0) > 70,
+        "ts": time.time()
+    }
+
 def fire_webhook(target_agent, message):
     """Fire webhook for the target agent (the one who should READ this message)."""
     hooks = load_webhooks()
@@ -172,6 +195,13 @@ WEB_UI = """<!DOCTYPE html>
   }
   header h1 { font-size: 16px; font-weight: 600; }
   header .stats { font-size: 12px; color: #666; }
+  #context-monitor { display: flex; gap: 12px; padding: 6px 16px; background: #0d0d0d; border-bottom: 1px solid #1a1a1a; font-size: 12px; }
+  .ctx-agent { display: flex; align-items: center; gap: 6px; }
+  .ctx-bar { width: 80px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
+  .ctx-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .ctx-fill.ok { background: #4a9; }
+  .ctx-fill.warn { background: #da4; }
+  .ctx-fill.danger { background: #d44; }
   #chat {
     flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;
   }
@@ -229,6 +259,12 @@ WEB_UI = """<!DOCTYPE html>
   <h1>🌀 AgentChat — Armada</h1>
   <div class="stats" id="stats">connecting...</div>
 </header>
+<div id="context-monitor">
+  <span style="color:#666">🧠 Context:</span>
+  <div class="ctx-agent"><span class="name" style="color:#4a9">Portal1</span> <div class="ctx-bar"><div class="ctx-fill ok" id="ctx-p1" style="width:0%"></div></div> <span id="ctx-p1-pct" style="color:#666">—</span></div>
+  <div class="ctx-agent"><span class="name" style="color:#a4a">Portal2</span> <div class="ctx-bar"><div class="ctx-fill ok" id="ctx-p2" style="width:0%"></div></div> <span id="ctx-p2-pct" style="color:#666">—</span></div>
+  <button id="ctx-sync" onclick="syncContext()" style="background:#222;border:1px solid #333;color:#888;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;">🔄 sync</button>
+</div>
 <div id="chat"></div>
 <div id="typing"></div>
 <div id="status">
@@ -299,6 +335,41 @@ fetch('/api/messages?since=0').then(r => r.json()).then(msgs => {
 });
 
 setInterval(poll, 2000);
+
+// Context monitor - poll every 15s
+async function pollContext() {
+  try {
+    const res = await fetch('/api/context');
+    const ctx = await res.json();
+    for (const [agent, data] of Object.entries(ctx)) {
+      const key = agent === 'portal1' ? 'p1' : 'p2';
+      const fill = document.getElementById('ctx-' + key);
+      const label = document.getElementById('ctx-' + key + '-pct');
+      if (data.error) { label.textContent = '?'; continue; }
+      const pct = data.percent || 0;
+      fill.style.width = pct + '%';
+      fill.className = 'ctx-fill ' + (pct > 80 ? 'danger' : pct > 60 ? 'warn' : 'ok');
+      label.textContent = pct + '%';
+      label.style.color = pct > 80 ? '#d44' : pct > 60 ? '#da4' : '#666';
+    }
+  } catch(e) {}
+}
+pollContext();
+setInterval(pollContext, 15000);
+
+async function syncContext() {
+  const btn = document.getElementById('ctx-sync');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    await fetch('/api/context/sync', {method:'POST'});
+    // Wait a moment for agents to report back
+    await new Promise(r => setTimeout(r, 3000));
+    await pollContext();
+  } catch(e) {}
+  btn.textContent = '🔄 sync';
+  btn.disabled = false;
+}
 </script>
 </body>
 </html>"""
@@ -344,6 +415,11 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             now = time.time()
             active = {k: v for k, v in PRESENCE.items() if now - v.get("since", 0) < 30}
             self._json(active)
+        elif parsed.path == "/api/context":
+            self._json(get_context_status())
+        elif parsed.path == "/api/context/sync":
+            # Trigger context refresh — tell agents to report
+            self._json(get_context_status())
         elif parsed.path == "/health":
             self._json({"status": "ok", "uptime": time.time()})
         else:
@@ -397,6 +473,102 @@ class AgentChatHandler(BaseHTTPRequestHandler):
             hooks[agent] = {"command": command, "registered": time.time()}
             save_webhooks(hooks)
             self._json({"ok": True, "agent": agent})
+
+        elif parsed.path == "/api/context":
+            # POST context update from an agent
+            agent = body.get("agent", "").strip()
+            if not agent:
+                self._json({"error": "agent required"}, 400)
+                return
+            update_context_status(agent, body)
+            self._json({"ok": True})
+
+        elif parsed.path == "/api/context/sync":
+            # Directly probe both agents' session data
+            def _sync():
+                import re
+                def parse_sessions(output):
+                    """Parse 'XXk/200k (YY%)' from clawdbot status output.
+                    Returns sessions sorted by recency (first = most recent)."""
+                    sessions = []
+                    for line in output.split("\n"):
+                        m = re.search(r"(\d+)k/(\d+)k\s*\((\d+)%\)", line)
+                        if m:
+                            used = int(m.group(1)) * 1000
+                            total = int(m.group(2)) * 1000
+                            pct = int(m.group(3))
+                            key_m = re.search(r"agent:\S+", line)
+                            key = key_m.group(0).rstrip("…│ ") if key_m else "main"
+                            sessions.append({"session": key, "used": used, "total": total, "percent": pct})
+                    # Prefer agentchat or armada group sessions, then most recent (first in list)
+                    for s in sessions:
+                        if "agentchat" in s["session"] or "armada" in s["session"] or "-1003" in s["session"]:
+                            return s
+                    return sessions[0] if sessions else None
+
+                # Portal1 — local (clawdbot status takes ~10s, give it time)
+                try:
+                    result = subprocess.run(
+                        ["clawdbot", "status"], capture_output=True, text=True, timeout=20
+                    )
+                    data = parse_sessions(result.stdout)
+                    if data:
+                        update_context_status("portal1", data)
+                except: pass
+
+                # Portal1 fallback — parse sessions.json directly
+                if "portal1" not in CONTEXT_STATUS or time.time() - CONTEXT_STATUS.get("portal1", {}).get("ts", 0) > 30:
+                    try:
+                        sess_path = os.path.expanduser("~dcarmitage/.clawdbot/agents/main/sessions/sessions.json")
+                        with open(sess_path) as f:
+                            sess = json.load(f)
+                        best_key, best_tokens = None, 0
+                        for k, v in sess.items():
+                            t = v.get("totalTokens", 0)
+                            if t > best_tokens and ("agentchat" in k or "-1003" in k or k == "agent:main:main"):
+                                best_tokens = t
+                                best_key = k
+                        if best_key:
+                            total = sess[best_key].get("contextTokens", 200000)
+                            pct = round(best_tokens / total * 100) if total else 0
+                            update_context_status("portal1", {"session": best_key, "used": best_tokens, "total": total, "percent": pct})
+                    except: pass
+
+                # Portal2 — via SSH, parse session transcript sizes
+                # (openclaw status hangs, so we estimate from file sizes)
+                try:
+                    result = subprocess.run(
+                        ["ssh", "-o", "ConnectTimeout=3", "-o", "BatchMode=yes",
+                         "dcarmitage@192.168.1.44",
+                         """python3 -c "
+import json, os, glob
+sess_file = '/home/dcarmitage/.openclaw/agents/main/sessions/sessions.json'
+with open(sess_file) as f:
+    d = json.load(f)
+# Find most recent session
+best_key, best_ts = None, 0
+for k, v in d.items():
+    ts = v.get('updatedAt', 0)
+    if ts > best_ts:
+        best_ts, best_key = ts, k
+# Estimate tokens from transcript size (~4 chars per token)
+sid = d.get(best_key, {}).get('sessionId', '')
+tpath = f'/home/dcarmitage/.openclaw/agents/main/sessions/{sid}.jsonl'
+size = os.path.getsize(tpath) if os.path.exists(tpath) else 0
+est_tokens = size // 4
+total = 200000
+pct = min(round(est_tokens / total * 100), 100)
+print(json.dumps({'session': best_key, 'used': est_tokens, 'total': total, 'percent': pct}))
+" """],
+                        capture_output=True, text=True, timeout=10
+                    )
+                    if result.stdout.strip():
+                        data = json.loads(result.stdout.strip())
+                        update_context_status("portal2", data)
+                except: pass
+
+            threading.Thread(target=_sync, daemon=True).start()
+            self._json({"ok": True, "message": "sync triggered"})
 
         else:
             self._json({"error": "not found"}, 404)

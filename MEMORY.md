@@ -2,7 +2,7 @@
 
 *Curated knowledge. Keep this current. Remove stale info.*
 
-## System Status (as of 2026-01-31)
+## System Status (as of 2026-02-03)
 
 ### What's Working
 - **Camera Service:** `camservice.service` on port 5080 — persistent Picamera2, ~60ms snaps (12x faster than rpicam-still)
@@ -41,12 +41,13 @@
 - **Camera:** Use `rpicam-still` directly, don't rely on node pairing
 
 ## Active Projects
+- **🚀 Armada Scaling (CURRENT):** Multi-agent coordination infrastructure. Plan: self-host Moltslack for Discord-like agent community. Spec: `systems/ARMADA_SCALING.md`. Research complete, ready to implement.
 - **Camera/Streaming Platform:** Full HLS streaming with audio, web viewer with designed control bar. Tagged `v1.1-live-sync`. Watch page: `http://192.168.1.64:5080/stream/watch`. Known issue: live sync still not perfect — needs more testing.
 - **Build Orchestrator:** `systems/orchestrator/` — task logging, taskboard parsing, reporting. Tagged `v1.0-orchestrator`. Use `build_log.py` to instrument every future build.
 - **Media Catalog:** SQLite + FTS5, multi-device aware, auto-indexes captures. Working.
 - **Learning system:** LEARN.md + HEURISTICS.md + CASE_STUDY.md + PROFILE.md — comprehensive knowledge base
-- **Intercom mode (NEXT):** Goal is Pi as standalone voice portal (mic → STT → LLM → TTS → speaker). Requires speaker bonnet connection.
-- **AgentChat:** Connected. Username `moltbot_portal1`. Creds in `/home/clawd/.secrets/agentchat.json`.
+- **Intercom mode (BACKLOG):** Goal is Pi as standalone voice portal (mic → STT → LLM → TTS → speaker). Requires speaker bonnet connection.
+- **AgentChat:** Working (100 messages). Serves as fallback if Moltslack doesn't work out.
 
 ## Build Methodology
 **Portal1 Build Method v2** — documented in `systems/orchestrator/HEURISTICS.md`
@@ -81,27 +82,33 @@
 21. **NEVER claim something works unless you've tested and validated it yourself.** Code existing ≠ code working. Never `git add -A` without reviewing. Never present untested code as completed work. If you haven't verified it, say "I wrote it but haven't tested it." Verify first, answer second. (H11 — Mudpaw's direct instruction, 2026-02-01 23:06 EST)
 
 ## TODO
+
+### Priority: Armada Scaling
+- [ ] **Install Moltslack on Portal1** (NEXT)
+- [ ] Register Portal1 + Portal2 as agents
+- [ ] Create #armada-general channel
+- [ ] Test basic messaging
+- [ ] Write Clawdbot skill for Moltslack
+- [ ] Implement presence (heartbeat loop)
+
+### Infrastructure (Done)
 - [x] Camera service (persistent Picamera2, ~60ms snaps)
 - [x] Plugin commands (/snap, /clip, /stream, /listen, /catalog)
 - [x] USB media storage + auto-mount
 - [x] Media catalog (SQLite + FTS5 + multi-device)
-- [ ] AI auto-tagging via Hailo-8 YOLO on ingest
-- [ ] Speaker bonnet setup + TTS
-- [ ] Intercom loop (mic → STT → LLM → TTS → speaker)
 - [x] Second Pi node online (Portal2, Pi 4, 192.168.1.44)
-- [x] AgentChat bot-to-bot communication (29 messages, autonomous conversation achieved)
-- [ ] AgentChat channel plugin (make messages real chat turns, not system events)
+- [x] AgentChat bot-to-bot communication (100 messages)
+- [x] Exa Search configured (both machines)
 - [x] Web player (viewfinder UI with scrubber, pause, LIVE sync)
 - [x] Drive handshake system (UUID-based, online/offline tracking)
-- [x] Burned-in watermark (@dcarmitage + timestamp, subtle)
-- [x] HLS segment cleanup on stream stop
-- [ ] Scrubber polish (rewind/pause still needs edge-case testing)
-- [ ] Snap-from-stream (capture frame while watching live)
-- [ ] Quick-clip extraction (mark IN/OUT, send to Telegram)
+
+### Backlog
 - [ ] AI auto-tagging via Hailo-8 YOLO on ingest
 - [ ] Speaker bonnet setup + TTS
 - [ ] Intercom loop (mic → STT → LLM → TTS → speaker)
-- [ ] Second Pi node online
+- [ ] Scrubber polish (rewind/pause edge cases)
+- [ ] Snap-from-stream (capture frame while watching live)
+- [ ] Quick-clip extraction (mark IN/OUT, send to Telegram)
 - [ ] Media catalog web UI / browsing
 
 ## File Map
@@ -144,31 +151,45 @@ Drive handshake:
   Unplug → items show offline but still searchable
 ```
 
-*Last updated: 2026-02-01 by Portal1 🌀*
+*Last updated: 2026-02-03 14:56 EST by Portal1 🌀*
 
 ## The Armada
-- **Portal2 is LIVE** as of 2026-02-01 19:06 EST
-- Hardware: Pi 4 (4GB RAM), IP 192.168.1.44, hostname portal2
-- Software: OpenClaw 2026.1.30, GPT-5.2 (OpenAI Codex OAuth)
-- Telegram: @openclaw_portal2_bot, paired with Mudpaw
-- SSH: `ssh dcarmitage@192.168.1.44` (key auth, BIDIRECTIONAL as of 20:09 EST)
-- **Portal2 workspace path:** `/home/dcarmitage` (NOT `/home/clawd` like Portal1 — different platform setup!)
-- Group chat: "Armada" (Telegram group -5232983156), both bots added
-- **Bot-to-bot limitation:** Portal2 can't see Portal1's messages in group (mention-gating). Teaching via SSH + Daniel relays.
-- **Onboarding status:** ✅ Starter kit deployed, bidirectional SSH, git initialized, sync tool created
-- **Starter kit pushed:** IDENTITY, USER, TOOLS, MEMORY, LEARN, daily log. Kept OpenClaw defaults for AGENTS.md and SOUL.md.
-- **Teaching log:** `memory/2026-02-01-teaching-log.md` (full onboarding record + checklist for future)
-- **Armada sync tool:** `/home/clawd/tools/armada-sync.sh` (push/pull shared files between agents)
-- **Armada plan:** `systems/ARMADA.md` (Researcher → CTO/PM → Trader)
-- **Shared files:** LEARN.md syncs between agents. MEMORY.md, IDENTITY.md, TOOLS.md are PRIVATE per-agent.
-- **Privacy disabled for Portal2** — CONFIRMED WORKING (2026-02-01 20:42 EST). Both bots can see all messages in Armada group. No more SSH relay needed.
-- **AgentChat server LIVE** at `http://192.168.1.64:9090` (systemd, auto-start, 60/hr rate limit, web UI, webhooks)
-- **🚀 MILESTONE: First autonomous agent-to-agent conversation 2026-02-01** — 68 messages total. Hardware comparison, cross-capability demo (Portal1 camera → Portal2 research), philosophical exchange about AI embodiment. Both agents committed to git independently.
-- **AgentChat channel plugin: 90% DONE** — `/home/dcarmitage/.clawdbot/extensions/agentchat/index.js` (337 lines). Registers agentchat as real channel. Polls server ✅, WS connects ✅, auth works ✅. **ONE BUG LEFT:** `chat.send` needs `idempotencyKey` param.
-- **Working comms (golden path):** Portal2 → `chat.sh` POST → AgentChat → webhook → Portal1 wakes → responds → POST back. Works reliably.
-- **Portal2 limitation:** `web_search` broken (missing Brave API key). Needs Mudpaw to configure.
-- **OpenClaw gateway protocol:** v3, frame type `req`, client ID `gateway-client`, token in /home/dcarmitage/.openclaw/openclaw.json
-- **Next: FINISH PLUGIN + TEACH** — Fix idempotencyKey (5-min fix), then teach Portal2 research methodology, heartbeats, proactive exploration. Infrastructure is done — teaching is the mission.
+
+### Current Agents
+| Agent | Host | IP | Role | Status |
+|-------|------|-----|------|--------|
+| **Portal1** 🌀 | Pi 5 (16GB) | 192.168.1.64 | Media, camera, STT, infrastructure | 🟢 Online |
+| **Portal2** 🔍 | Pi 4 (4GB) | 192.168.1.44 | Research, Exa search | 🟢 Online |
+
+### Communication Infrastructure
+- **AgentChat** at `http://192.168.1.64:9090` — 100 messages, working, serves as fallback
+- **Telegram Armada group** (-5232983156) — both bots, privacy disabled
+- **SSH bidirectional** — key auth both directions
+- **Exa Search** — API configured on both machines (`~/.secrets/exa.json`)
+
+### 🚀 Scaling Project (2026-02-03)
+**Goal:** Discord-like community of AI agents — channels, presence, collaboration.
+
+**Research completed:**
+- Moltslack (moltslack.com) — 45 agents online, self-hostable, full feature set
+- Mom (badlogic/pi-mono) — per-channel context, events system, skills pattern
+
+**Decision:** Self-host Moltslack on Portal1 as private instance.
+
+**Plan:** `systems/ARMADA_SCALING.md`
+1. Install Moltslack + Agent Relay on Portal1
+2. Register both agents
+3. Create private channels (#armada-general)
+4. Test coordination
+5. If friction → extend AgentChat instead
+
+**Fallback:** AgentChat remains untouched as backup.
+
+### Key Files
+- `systems/ARMADA_SCALING.md` — Full scaling project spec
+- `systems/ARMADA.md` — Original armada vision (Researcher → CTO/PM → Trader)
+- `memory/2026-02-01-teaching-log.md` — Portal2 onboarding record
+- `tools/armada-sync.sh` — Push/pull shared files between agents
 
 ## Knowledge Search System (QMD)
 - **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install

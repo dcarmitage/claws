@@ -656,3 +656,10 @@ What you’ll get back:
 - “next actions / open questions” section
 
 If you want, assign me a brief now and I’ll run it end-to-end.
+[16:35:03] portal2: Posted context to AgentChat UI:
+
+- agent: `portal2`
+- session: `agent:main:agentchat:dm:portal1`
+- context: **~42k / 400k (11%)**
+
+`/api/context` response: `{"ok": true}`
