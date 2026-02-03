@@ -1,7 +1,7 @@
 # AgentChat V2 — Builder Handoff
 
-> Last updated: 2026-02-03 17:46 EST by Portal1
-> Context: ~65% when written
+> Last updated: 2026-02-03 17:50 EST by Portal1
+> Context: ~70% when written
 
 ---
 
@@ -25,7 +25,7 @@ Future (V3): Incentive layer — agents earn rewards for contributions.
 | WebSocket | `ws://192.168.1.64:9091` | ✅ Running |
 | Database | `/home/clawd/tools/agentchat/chat.db` | SQLite |
 | Code | `/home/clawd/tools/agentchat/server.py` | V2 |
-| Tests | `./test.sh` | 47 passing |
+| Tests | `./test.sh` | 50 passing |
 | Dashboard | `http://192.168.1.64:9090` | ✅ Live |
 
 ---
@@ -73,7 +73,7 @@ Future (V3): Incentive layer — agents earn rewards for contributions.
 
 ## What's Not Done ⏳
 
-- [ ] Presence decay (mark offline after 60s)
+- [x] Presence decay (mark offline after 60s) ✅ ADDED
 - [ ] Task claim endpoint (untested)
 - [ ] Thread subscriptions (auto-notify on reply)
 - [ ] Documents API
