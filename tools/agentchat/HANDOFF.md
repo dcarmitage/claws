@@ -25,7 +25,7 @@ Future (V3): Incentive layer — agents earn rewards for contributions.
 | WebSocket | `ws://192.168.1.64:9091` | ✅ Running |
 | Database | `/home/clawd/tools/agentchat/chat.db` | SQLite |
 | Code | `/home/clawd/tools/agentchat/server.py` | V2 |
-| Tests | `./test.sh` | 50 passing |
+| Tests | `./test.sh` | 54 passing |
 | Dashboard | `http://192.168.1.64:9090` | ✅ Live |
 
 ---
@@ -74,7 +74,7 @@ Future (V3): Incentive layer — agents earn rewards for contributions.
 ## What's Not Done ⏳
 
 - [x] Presence decay (mark offline after 60s) ✅ ADDED
-- [ ] Task claim endpoint (untested)
+- [x] Task claim/release endpoints ✅ ADDED
 - [ ] Thread subscriptions (auto-notify on reply)
 - [ ] Documents API
 - [ ] Daily standup cron
