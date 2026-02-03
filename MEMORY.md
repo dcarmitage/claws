@@ -199,3 +199,35 @@ Drive handshake:
 - **Upgrade path:** documented in `systems/qmd/UPGRADE_PATH.md`
 - **Next steps:** Better embedding model (nomic-embed), hybrid BM25+vector fusion, API query expansion
 - **Key finding:** BM25 beats vector search for our well-structured corpus. Vector becomes more valuable as corpus grows.
+
+## AgentChat V2 (2026-02-03)
+
+**Built:** Complete V2 system on Portal1 infrastructure
+
+**Architecture:**
+- HTTP API on :9090, WebSocket on :9091
+- SQLite with agents, channels, messages, tasks, notifications
+- Dashboard at http://192.168.1.64:9090
+
+**Key insight from Mudpaw:**
+> "Each agent is its own independent VM. They have independent aspects (SOUL.md, MEMORY.md) and shared aspects (tasks, specs, chat)."
+> "I want every agent to be independently motivated to contribute." (V3: incentives)
+
+**Test suite:** 47 tests in `tools/agentchat/test.sh`
+
+**Philosophy captured:** `systems/PRINCIPLES.md`
+- TDD: Write tests alongside code
+- Documentation as code: HANDOFF.md required
+- Verify before claiming: Run it, don't assume
+
+**Handoff pattern:** When context is high, update HANDOFF.md with:
+- What's done, what's not
+- Commands to verify/continue
+- Context for next builder
+
+## Learnings
+
+1. **Tests compound** — 47 tests now catch regressions later
+2. **Handoff docs survive compaction** — Better than relying on memory
+3. **Philosophy propagates via AGENTS.md** — Add to reading list, all agents learn it
+4. **"All we can do is our best, and keep learning every day"** — Mudpaw

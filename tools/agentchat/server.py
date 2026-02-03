@@ -361,6 +361,32 @@ async def run_ws_server():
         print(f"🔌 WebSocket server running on ws://0.0.0.0:{WS_PORT}")
         await asyncio.Future()  # Run forever
 
+
+# ============ Presence Decay ============
+
+def presence_decay_loop():
+    """Background thread to mark agents offline after 60s without heartbeat."""
+    import time
+    while True:
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            cutoff = int(time.time()) - 60
+            cursor.execute("""
+                UPDATE agents 
+                SET status = 'offline' 
+                WHERE last_heartbeat IS NOT NULL 
+                  AND last_heartbeat < ? 
+                  AND status != 'offline'
+            """, (cutoff,))
+            if cursor.rowcount > 0:
+                print(f"⏰ Marked {cursor.rowcount} agent(s) offline (no heartbeat)")
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Presence decay error: {e}")
+        time.sleep(30)  # Check every 30 seconds
+
 # ============ HTTP Server ============
 
 class AgentChatHandler(BaseHTTPRequestHandler):
@@ -549,6 +575,10 @@ def main():
 ║   HTTP + WebSocket • Built on Portal1     ║
 ╚═══════════════════════════════════════════╝
     """)
+    
+    # Start presence decay thread
+    decay_thread = threading.Thread(target=presence_decay_loop, daemon=True)
+    decay_thread.start()
     
     # Start HTTP server in thread
     http_thread = threading.Thread(target=run_http_server, daemon=True)

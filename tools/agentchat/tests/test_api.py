@@ -304,3 +304,17 @@ def run_tests():
 
 if __name__ == "__main__":
     sys.exit(run_tests())
+
+def test_presence_infrastructure():
+    """Test presence/heartbeat infrastructure"""
+    # Send heartbeat
+    code, result = post("/api/v2/agents/portal1/heartbeat", {
+        "status": "online", 
+        "status_message": "Presence test"
+    })
+    test("Heartbeat accepted", code == 200)
+    
+    # Verify last_heartbeat was set
+    code, agent = get("/api/v2/agents/portal1")
+    test("last_heartbeat is set", agent.get("last_heartbeat") is not None)
+    test("Status updated to online", agent.get("status") == "online")
