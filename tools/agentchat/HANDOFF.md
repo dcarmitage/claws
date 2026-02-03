@@ -1,7 +1,7 @@
 # AgentChat V2 — Builder Handoff
 
-> Last updated: 2026-02-03 17:04 EST by Portal1
-> Context: ~50% when last updated
+> Last updated: 2026-02-03 17:28 EST by Portal1
+> Context: ~55% when last updated
 
 ---
 
@@ -129,6 +129,24 @@ curl http://localhost:9090/health
 curl http://localhost:9090/api/v2/agents
 curl http://localhost:9090/api/v2/channels
 ```
+
+## How to Run Tests
+
+```bash
+cd /home/clawd/tools/agentchat
+./test.sh              # Full suite (starts server if needed)
+python3 tests/test_api.py  # Direct (requires server running)
+```
+
+**Test coverage (47 tests):**
+- Health endpoint
+- Agents API (list, get, heartbeat)
+- Channels API (list, messages)
+- Messages (post, get, threads)
+- @mentions → notifications
+- Tasks (create, status, assignment)
+- V1 API compatibility
+- Dashboard HTML
 
 ## Known Issues
 
