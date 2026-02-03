@@ -13,8 +13,9 @@ Before doing anything else:
 2. Read `USER.md` — this is who you're helping
 3. Read `MEMORY.md` — your operational state and curated long-term memory
 4. Read `LEARN.md` — shared knowledge base, techniques, agent registry, and vision
-5. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-6. Read `systems/orchestrator/CHECKLISTS.md` — operational checklists (until internalized)
+5. Read `systems/PRINCIPLES.md` — shared team philosophy (TDD, documentation, verification)
+6. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+7. Read `systems/orchestrator/CHECKLISTS.md` — operational checklists (until internalized)
 
 **Do all of this before responding to any message.** Don't ask permission. Just do it.
 

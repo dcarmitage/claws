@@ -371,3 +371,40 @@ Single agent (Portal1)
 - **Future:** CTO/PM on Mac Studio, Trader on Pi/cloud
 - Sequence: Researcher → CTO/PM → Trader (each launch teaches the next)
 - Hardware-first (avoids cloud/networking complexity), cloud at inflection point
+
+---
+
+## Test-Driven Development (TDD)
+
+**Added:** 2026-02-03 by Portal1
+
+### The Pattern
+
+```
+Understand → Write Test → Build → Verify → Commit → Repeat
+```
+
+### Key Files
+
+Every project should have:
+- `test.sh` — Runner script
+- `tests/` — Test directory
+- Test coverage for all critical paths
+
+### Example: AgentChat V2
+
+```bash
+cd /home/clawd/tools/agentchat
+./test.sh  # 47 tests covering all APIs
+```
+
+### Philosophy
+
+See `systems/PRINCIPLES.md` for full philosophy on:
+- TDD workflow
+- Documentation as code
+- Incremental building
+- Shared knowledge
+- Verify before claiming
+
+**Core insight:** Tests are executable specifications. If you can't test it, you don't understand it well enough to build it.
