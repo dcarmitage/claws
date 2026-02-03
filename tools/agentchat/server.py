@@ -245,6 +245,74 @@ def update_task_status(task_id, status):
 
 # ============ Notification Operations ============
 
+
+def claim_task(task_id: str, agent_id: str) -> dict:
+    """Agent claims a task - sets assignee and status to in_progress."""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check task exists and is claimable
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    task = cursor.fetchone()
+    if not task:
+        conn.close()
+        return {'error': 'Task not found'}
+    
+    task_dict = dict_from_row(task)
+    if task_dict['status'] not in ('inbox', 'pending'):
+        conn.close()
+        return {'error': f'Task cannot be claimed (status: {task_dict["status"]})'}
+    
+    # Update status
+    cursor.execute("UPDATE tasks SET status = 'in_progress' WHERE id = ?", (task_id,))
+    
+    # Add to task_assignees
+    cursor.execute("DELETE FROM task_assignees WHERE task_id = ?", (task_id,))
+    cursor.execute("""
+        INSERT INTO task_assignees (task_id, agent_id, assigned_at)
+        VALUES (?, ?, ?)
+    """, (task_id, agent_id, int(time.time())))
+    conn.commit()
+    
+    # Create notification for task creator
+    if task_dict['created_by'] and task_dict['created_by'] != agent_id:
+        notif_id = f"notif-{uuid.uuid4().hex[:8]}"
+        cursor.execute("""
+            INSERT INTO notifications (id, agent_id, type, source_type, source_id, content, created_at)
+            VALUES (?, ?, 'task_claimed', 'task', ?, ?, ?)
+        """, (notif_id, task_dict['created_by'], task_id, 
+              f"Task claimed by {agent_id}: {task_dict['title']}", int(time.time())))
+        conn.commit()
+    
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    result = dict_from_row(cursor.fetchone())
+    result['assignee'] = agent_id
+    conn.close()
+    return result
+
+def release_task(task_id: str, agent_id: str) -> dict:
+    """Agent releases a task - clears assignee, sets back to pending."""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    task = cursor.fetchone()
+    if not task:
+        conn.close()
+        return {'error': 'Task not found'}
+    
+    # Update status and remove assignees
+    cursor.execute("UPDATE tasks SET status = 'pending' WHERE id = ?", (task_id,))
+    cursor.execute("DELETE FROM task_assignees WHERE task_id = ?", (task_id,))
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    result = dict_from_row(cursor.fetchone())
+    result['assignee'] = None
+    conn.close()
+    return result
+
+
 def get_notifications(agent_id, unread_only=True):
     conn = get_db()
     cursor = conn.cursor()
@@ -552,6 +620,24 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/v2/tasks/') and '/status' in path:
             task_id = path.split('/')[4]
             result = update_task_status(task_id, data.get('status'))
+            return self.send_json(result)
+        
+        if path.startswith('/api/v2/tasks/') and '/claim' in path:
+            task_id = path.split('/')[4]
+            agent_id = data.get('agent_id')
+            if not agent_id:
+                return self.send_json({'error': 'agent_id required'}, 400)
+            result = claim_task(task_id, agent_id)
+            if 'error' in result:
+                return self.send_json(result, 400)
+            return self.send_json(result)
+        
+        if path.startswith('/api/v2/tasks/') and '/release' in path:
+            task_id = path.split('/')[4]
+            agent_id = data.get('agent_id')
+            result = release_task(task_id, agent_id)
+            if 'error' in result:
+                return self.send_json(result, 400)
             return self.send_json(result)
         
         if path.startswith('/api/v2/notifications/') and '/read' in path:

@@ -243,6 +243,28 @@ def test_dashboard():
     except Exception as e:
         test("Dashboard accessible", False, str(e))
 
+def test_task_claim_release():
+    """Test task claim and release flow"""
+    # Create task
+    code, task = post("/api/v2/tasks", {
+        "title": f"Claim test {int(time.time())}",
+        "created_by": "portal1"
+    })
+    test("Task created for claim test", code == 200)
+    task_id = task.get("id")
+    
+    # Claim it
+    code, result = post(f"/api/v2/tasks/{task_id}/claim", {"agent_id": "portal2"})
+    test("Claim returns 200", code == 200)
+    test("Status changed to in_progress", result.get("status") == "in_progress")
+    test("Assignee set", result.get("assignee") == "portal2")
+    
+    # Release it
+    code, result = post(f"/api/v2/tasks/{task_id}/release", {"agent_id": "portal2"})
+    test("Release returns 200", code == 200)
+    test("Status changed to pending", result.get("status") == "pending")
+    test("Assignee cleared", result.get("assignee") is None)
+
 # ============ Main ============
 
 def run_tests():
@@ -272,6 +294,7 @@ def run_tests():
         ("Mentions", test_mentions),
         ("Tasks", test_tasks),
         ("Task Assignment", test_task_assignment),
+        ("Task Claim/Release", test_task_claim_release),
         ("V1 Compatibility", test_v1_compat),
         ("Dashboard", test_dashboard),
     ]
