@@ -179,7 +179,7 @@ def process_mentions(content, msg_id, sender_id):
     conn.close()
 
 def fire_webhooks(sender_id, message):
-    """Fire webhooks for agents other than sender."""
+    """Fire webhooks for agents other than sender with delivery tracking."""
     try:
         with open(WEBHOOK_CONFIG) as f:
             webhooks = json.load(f)
@@ -188,13 +188,105 @@ def fire_webhooks(sender_id, message):
     
     for agent_id, webhook in webhooks.items():
         if agent_id != sender_id:
+            delivery_id = f"wd-{uuid.uuid4().hex[:8]}"
+            msg_id = message.get('id', '')
+            channel_id = message.get('channel_id', '')
+            now = int(time.time())
+            
+            # Record delivery attempt
             try:
-                # Fire webhook in background
-                script = webhook.get('script')
-                if script:
-                    subprocess.Popen([script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO webhook_deliveries (id, message_id, agent_id, channel_id, status, created_at)
+                    VALUES (?, ?, ?, ?, 'pending', ?)
+                """, (delivery_id, msg_id, agent_id, channel_id, now))
+                conn.commit()
+                conn.close()
             except Exception as e:
-                print(f"Webhook error for {agent_id}: {e}")
+                print(f"[WEBHOOK] DB error recording delivery: {e}")
+            
+            try:
+                script = webhook.get('command') or webhook.get('script')
+                if script:
+                    env = {
+                        'AGENTCHAT_SENDER': sender_id,
+                        'AGENTCHAT_TEXT': message.get('content', ''),
+                        'AGENTCHAT_CHANNEL': channel_id,
+                        'AGENTCHAT_MSG_ID': msg_id,
+                        'AGENTCHAT_DELIVERY_ID': delivery_id,
+                        'PATH': '/usr/local/bin:/usr/bin:/bin'
+                    }
+                    print(f"[WEBHOOK] {delivery_id} firing for {agent_id}: {script}")
+                    
+                    # Run and track result
+                    proc = subprocess.Popen([script], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    # Mark as delivered (fire-and-forget for now)
+                    try:
+                        conn = get_db()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            UPDATE webhook_deliveries SET status = 'delivered', delivered_at = ?
+                            WHERE id = ?
+                        """, (int(time.time()), delivery_id))
+                        conn.commit()
+                        conn.close()
+                        print(f"[WEBHOOK] {delivery_id} delivered to {agent_id}")
+                    except:
+                        pass
+            except Exception as e:
+                print(f"[WEBHOOK] {delivery_id} error for {agent_id}: {e}")
+                try:
+                    conn = get_db()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE webhook_deliveries SET status = 'failed', error = ?
+                        WHERE id = ?
+                    """, (str(e), delivery_id))
+                    conn.commit()
+                    conn.close()
+                except:
+                    pass
+
+def get_webhook_stats():
+    """Get webhook delivery statistics."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    day_ago = now - 86400
+    
+    # Counts by status
+    cursor.execute("SELECT status, COUNT(*) FROM webhook_deliveries GROUP BY status")
+    status_counts = {r[0]: r[1] for r in cursor.fetchall()}
+    
+    # Delivered in last 24h
+    cursor.execute("SELECT COUNT(*) FROM webhook_deliveries WHERE status = 'delivered' AND delivered_at > ?", (day_ago,))
+    delivered_24h = cursor.fetchone()[0]
+    
+    # Oldest pending
+    cursor.execute("SELECT MIN(created_at) FROM webhook_deliveries WHERE status = 'pending'")
+    oldest = cursor.fetchone()[0]
+    oldest_age = (now - oldest) if oldest else 0
+    
+    # Last success/error timestamps
+    cursor.execute("SELECT MAX(delivered_at) FROM webhook_deliveries WHERE status = 'delivered'")
+    last_success = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT MAX(created_at) FROM webhook_deliveries WHERE status = 'failed'")
+    last_error = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    return {
+        'pending': status_counts.get('pending', 0),
+        'delivered_24h': delivered_24h,
+        'delivered_total': status_counts.get('delivered', 0),
+        'failed': status_counts.get('failed', 0),
+        'deadletter': status_counts.get('deadletter', 0),
+        'oldest_pending_age_s': oldest_age,
+        'last_success_ts': last_success,
+        'last_error_ts': last_error
+    }
 
 # ============ Task Operations ============
 
@@ -532,6 +624,9 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         # V2 API
         if path == '/api/v2/agents':
             return self.send_json(get_agents())
+        
+        if path == '/api/v2/webhook_stats':
+            return self.send_json(get_webhook_stats())
         
         if path.startswith('/api/v2/agents/') and path.endswith('/notifications'):
             agent_id = path.split('/')[4]
