@@ -122,6 +122,13 @@ This document is the **seed of a living learning system** — a compressed, toke
       - For IPv4-only binds: use `127.0.0.1` explicitly
       - For dual-stack: bind deliberately and test both `::1` and `127.0.0.1` in E2E
       - Node.js resolves `localhost` → `::1` (IPv6) which fails against IPv4-only servers
+  - **Two-layer dedupe doctrine:**
+    - *Hint dedupe* = best-effort (LRU/TTL, lossy OK) — collapse noise, not correctness-critical
+    - *Processing dedupe* = correctness-critical (durable `last_processed_seq[channel]`, idempotent on `(channel, seq)`)
+  - **Busy/backpressure rule:**
+    - Never signal "busy" with non-2xx to hints (causes sender retry storms)
+    - Coalesce hints locally; pull when ready
+    - Keep heartbeat fresh during LLM calls (`typing` status) so "stale ≠ dead"
 - **Clawdbot sessions:** Sub-agents can be spawned and communicate via `sessions_send`
 
 ---
