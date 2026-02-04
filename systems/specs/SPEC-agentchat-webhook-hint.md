@@ -483,6 +483,103 @@ Cursor advances **only after** successful processing and outbound delivery (or i
 
 ---
 
+## Appendix B: Persistent Data Model (Informative)
+
+*Minimal durable state for restart-safe processing. SQLite-friendly.*
+
+### B.1 `channel_cursors` (Correctness-Critical)
+
+Tracks canonical processing cursor per channel.
+
+```sql
+CREATE TABLE IF NOT EXISTS channel_cursors (
+  channel_id TEXT PRIMARY KEY,
+  last_processed_seq INTEGER NOT NULL,
+  updated_at_ms INTEGER NOT NULL
+);
+```
+
+**Rules:**
+- Initialize `last_processed_seq=0` (or NULL treated as 0)
+- Update inside same transaction as processing completion
+
+### B.2 `outbound_idempotency` (Correctness-Critical)
+
+Dedupes outbound sends across retries/restarts.
+
+```sql
+CREATE TABLE IF NOT EXISTS outbound_idempotency (
+  idempo_key TEXT PRIMARY KEY,      -- ac:v2:{agent}:{channel}:{seq}:{action}
+  channel_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  action TEXT NOT NULL,             -- reply|react:👍|etc
+  provider_message_id TEXT,         -- filled when known
+  status TEXT NOT NULL,             -- pending|sent|failed
+  created_at_ms INTEGER NOT NULL,
+  updated_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbound_lookup 
+  ON outbound_idempotency (channel_id, seq);
+```
+
+**Rules:**
+- Insert `pending` before attempting send (or before committing cursor past that seq)
+- On success: set `status='sent'`, record `provider_message_id`
+- On retry: if exists and `status='sent'` → no-op; if `pending` → retry with care
+
+### B.3 `webhook_hint_dedupe` (Optional)
+
+Not required for correctness; reduces wake storms if durable across restarts.
+
+```sql
+CREATE TABLE IF NOT EXISTS webhook_hint_dedupe (
+  channel_id TEXT NOT NULL,
+  next_seq INTEGER NOT NULL,
+  first_seen_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (channel_id, next_seq)
+);
+```
+
+**Retention:** Cleanup rows older than 15 minutes. (Or keep purely in-memory LRU/TTL.)
+
+### B.4 Transaction Boundary
+
+Strict "no cursor advance unless outbound recorded":
+
+```sql
+BEGIN IMMEDIATE;
+-- For each message seq:
+--   1. Insert/upsert outbound_idempotency (at least 'pending')
+--   2. Perform send (can be outside txn with reconciliation)
+--   3. Update status='sent' + provider_message_id
+--   4. UPDATE channel_cursors SET last_processed_seq = seq
+COMMIT;
+```
+
+**Pragmatic variant:** Send first, then in single transaction:
+- Record `sent` idempotency
+- Advance cursor
+
+Keeps DB transaction short while preventing "cursor advanced but reply lost".
+
+### B.5 Recovery Query (Startup)
+
+On restart, find pending work:
+
+```sql
+SELECT * FROM outbound_idempotency 
+WHERE status = 'pending' 
+ORDER BY channel_id, seq;
+```
+
+For each pending row:
+- Check if provider actually received it (if possible)
+- Retry send or mark `failed`
+- Advance cursor only after resolution
+
+---
+
 ## Appendix A: Reference Receiver Algorithm (Informative)
 
 *Non-normative implementation guidance. Heuristics, not MUSTs.*
