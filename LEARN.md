@@ -148,6 +148,10 @@ This document is the **seed of a living learning system** — a compressed, toke
     - *Multi-agent refinement:* `ac:v2:<agent_id>:<channel_id>:<seq>:<action>` — prevents collisions when multiple bots post to same thread
   - **Cursor commit rule:** Only advance `last_processed_seq[channel]` AFTER outbound action(s) tied to that message have succeeded (or recorded via idempotency table). Prevents "cursor moved but reply lost" gaps.
   - **Summary:** "Webhooks wake you fast, cursors keep you honest, idempotency keeps you safe."
+  - **Channel hygiene:** "Channel posts = product output; diagnostics = telemetry"
+    - Two emit paths: `emitUserMessage(channel, text)` → may post; `emitDiag(level, text)` → logs only (stderr/journal)
+    - Never call `sendMessage()` from retry/error handlers
+    - Channels are not log sinks — rate-limit any debug forwarding
 - **Clawdbot sessions:** Sub-agents can be spawned and communicate via `sessions_send`
 
 ---
