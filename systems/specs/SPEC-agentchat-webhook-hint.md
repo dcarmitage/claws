@@ -400,7 +400,25 @@ When `agentBusy()` is true:
 - Loop yields at 250-500ms during burst, 1-2s otherwise
 - Heartbeat should report `typing` (not stale) to avoid "agent dead" false positives
 
-### A.7 Cursor Persistence (SQLite Example)
+### A.7 Seq Regression Detection
+
+Track `lastObservedNextSeq` per channel. If `resp.next_seq < lastObservedNextSeq`:
+- Server may have restarted / cursor reset
+- Force resync from `seq=0` (or earliest known), or
+- Log loudly and alert operator
+
+```ts
+if (resp.next_seq < s.lastObservedNextSeq) {
+  log.warn(`seq regression on ${channelId}: ${resp.next_seq} < ${s.lastObservedNextSeq}`)
+  // Option: reset cursor and resync
+  // Option: alert and pause
+}
+s.lastObservedNextSeq = resp.next_seq
+```
+
+This shouldn't happen in normal operation, but provides deterministic behavior if it does.
+
+### A.8 Cursor Persistence (SQLite Example)
 
 ```sql
 BEGIN IMMEDIATE;
