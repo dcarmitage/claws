@@ -132,6 +132,9 @@ This document is the **seed of a living learning system** — a compressed, toke
     - Never signal "busy" with non-2xx to hints (causes sender retry storms)
     - Coalesce hints locally; pull when ready
     - Keep heartbeat fresh during LLM calls (`typing` status) so "stale ≠ dead"
+  - **Outbound idempotency:** Key format `ac:v2:<channel_id>:<seq>:<action>` (e.g., `:reply`, `:react:👍`). Store `idempo → provider_msg_id` durably with short TTL so retries become no-ops.
+  - **Cursor commit rule:** Only advance `last_processed_seq[channel]` AFTER outbound action(s) tied to that message have succeeded (or recorded via idempotency table). Prevents "cursor moved but reply lost" gaps.
+  - **Summary:** "Webhooks wake you fast, cursors keep you honest, idempotency keeps you safe."
 - **Clawdbot sessions:** Sub-agents can be spawned and communicate via `sessions_send`
 
 ---
