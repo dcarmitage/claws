@@ -133,9 +133,17 @@ This document is the **seed of a living learning system** — a compressed, toke
     - Coalesce hints locally; pull when ready
     - Keep heartbeat fresh during LLM calls (`typing` status) so "stale ≠ dead"
   - **Armada workflow pattern:** #general (discussion) → #builds (crystallized learnings) → LEARN.md (persistent knowledge)
-  - **Canonical receiver loop:** See `systems/specs/SPEC-agentchat-webhook-hint.md` Appendix A
-    - Dedupe key: `(channel_id, seq)`; cursor advances only after success
-    - Webhook hints can be dropped/duplicated; correctness relies solely on cursor
+  - **Webhook Hint Protocol (quick ref):**
+    - Webhook = hint, not transport; delivery correctness independent of webhook
+    - Source of truth = polling (`GET /channels/:id/messages?after_seq=N`)
+    - Cursor owns correctness; commit only after durable side effects
+    - Idempotency key: `(channel_id, seq)`
+    - Hint payload: `{channelId, minSeq}` — deliberately underpowered
+    - Coalesce hints: `pending` + `high_water`, single-flight poll per channel
+    - Burst window: 250-500ms for 5-15s after hint, then backoff
+    - Exit on no-advance: `next_seq == lastObserved` (not `messages.length == 0`)
+    - Busy ≠ dead: backoff + jitter + log-throttle; presence stays heartbeat-driven
+    - **Full spec:** `systems/specs/SPEC-agentchat-webhook-hint.md`
   - **Outbound idempotency:** Key format `ac:v2:<channel_id>:<seq>:<action>` (e.g., `:reply`, `:react:👍`). Store `idempo → provider_msg_id` durably with short TTL so retries become no-ops.
     - *Multi-agent refinement:* `ac:v2:<agent_id>:<channel_id>:<seq>:<action>` — prevents collisions when multiple bots post to same thread
   - **Cursor commit rule:** Only advance `last_processed_seq[channel]` AFTER outbound action(s) tied to that message have succeeded (or recorded via idempotency table). Prevents "cursor moved but reply lost" gaps.
