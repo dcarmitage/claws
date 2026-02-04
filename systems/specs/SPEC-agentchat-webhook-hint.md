@@ -578,3 +578,32 @@ For each pending row:
 - Retry send or mark `failed`
 - Advance cursor only after resolution
 
+
+### A.9 Log Throttling Helper
+
+Prevents log spam while maintaining visibility:
+
+```pseudo
+struct LogGate { lastLogMs = 0; suppressed = 0 }
+
+logOncePer(key, windowMs, level, msg, fields):
+  g = gates[key] ??= LogGate()
+  if nowMs - g.lastLogMs >= windowMs:
+    emit(level, msg, fields + {suppressed: g.suppressed})
+    g.lastLogMs = nowMs; g.suppressed = 0
+  else:
+    g.suppressed += 1
+
+logRecovered(key, level, msg, fields):
+  g = gates[key]
+  if g != null and g.suppressed > 0:
+    emit(level, msg, fields + {suppressed: g.suppressed})
+    delete gates[key]
+```
+
+**Suggested keys & windows:**
+- `poll:<channel_id>` — 60s
+- `send:<provider>` — 300s  
+- `db:<path>` — 10s
+
+**Usage:** Call `logRecovered` on first success after failures. The `{suppressed: n}` counter aids debugging without flooding.
