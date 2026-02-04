@@ -82,22 +82,54 @@ def get_channels():
     conn.close()
     return channels
 
-def get_channel_messages(channel_id, since=0, limit=100):
+def parse_cursor(since):
+    """Parse compound cursor 'ts:id' or legacy int timestamp.
+    Returns (ts, id) tuple. For legacy int, id is empty string (sorts before any real id)."""
+    if since is None or since == '' or since == 0 or since == '0':
+        return (0, '')
+    if isinstance(since, int):
+        return (since, '')
+    if isinstance(since, str) and ':' in since:
+        parts = since.split(':', 1)
+        return (int(parts[0]), parts[1])
+    # Legacy: just a timestamp string
+    return (int(float(since)), '')
+
+def get_channel_messages(channel_id, since=None, limit=100):
+    """Fetch messages with deterministic cursor semantics.
+    
+    Args:
+        channel_id: Channel to fetch from
+        since: Compound cursor 'ts:id' (exclusive) or legacy timestamp
+        limit: Max messages to return
+    
+    Returns:
+        dict with 'messages' list and 'next_since' cursor for pagination
+    """
+    since_ts, since_id = parse_cursor(since)
+    
     conn = get_db()
     cursor = conn.cursor()
-    # Get newest messages first, then reverse for chronological order
+    # Compound cursor comparison: (created_at, id) > (since_ts, since_id)
+    # SQLite tuple comparison works lexicographically
     cursor.execute("""
         SELECT m.*, a.name as sender_name 
         FROM messages_v2 m
         JOIN agents a ON m.sender_id = a.id
-        WHERE m.channel_id = ? AND m.created_at > ?
-        ORDER BY m.created_at DESC
+        WHERE m.channel_id = ? AND (m.created_at, m.id) > (?, ?)
+        ORDER BY m.created_at ASC, m.id ASC
         LIMIT ?
-    """, (channel_id, since, limit))
+    """, (channel_id, since_ts, since_id, limit))
     messages = [dict_from_row(r) for r in cursor.fetchall()]
-    messages.reverse()  # Return in chronological order (oldest first)
     conn.close()
-    return messages
+    
+    # Compute next_since cursor from last message
+    next_since = None
+    if messages:
+        last = messages[-1]
+        next_since = f"{last['created_at']}:{last['id']}"
+    
+    return {'messages': messages, 'next_since': next_since}
 
 def post_channel_message(channel_id, sender_id, content, thread_id=None):
     created_at = int(time.time())
@@ -615,10 +647,10 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         
         # V1 compatibility
         if path == '/api/messages':
-            since = int(float(params.get('since', [0])[0]))
-            messages = get_channel_messages('general', since)
-            # Convert to v1 format
-            v1_messages = [{'id': m['id'], 'ts': m['created_at'], 'sender': m['sender_name'], 'text': m['content']} for m in messages]
+            since = params.get('since', ['0'])[0]
+            result = get_channel_messages('general', since)
+            # Convert to v1 format (just the list for backward compat)
+            v1_messages = [{'id': m['id'], 'ts': m['created_at'], 'sender': m['sender_name'], 'text': m['content']} for m in result['messages']]
             return self.send_json(v1_messages)
         
         # V2 API
@@ -641,7 +673,7 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         
         if path.startswith('/api/v2/channels/') and '/messages' in path:
             channel_id = path.split('/')[4]
-            since = int(float(params.get('since', [0])[0]))
+            since = params.get('since', [None])[0]  # Compound cursor or None
             limit = int(params.get('limit', [100])[0])
             return self.send_json(get_channel_messages(channel_id, since, limit))
         
