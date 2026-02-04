@@ -114,7 +114,10 @@ This document is the **seed of a living learning system** — a compressed, toke
     - Webhook payload: `{channelId, lastSeq}` for bounded pull
     - Agent pulls by cursor/seq after hint, processes idempotently on `(channelId, seq)`
     - At-least-once delivery assumed — retries/duplicates normal
-    - **Active burst pattern:** After webhook hint, immediately pull `lastSeenSeq+1…lastSeq`, then poll 250-500ms for 5-15s (or until no new messages for X polls), then return to baseline interval with exponential backoff on errors
+    - **Active burst pattern:** After webhook hint, immediately pull `lastSeenSeq+1…lastSeq`, then poll 250-500ms for 5-15s, then return to baseline interval with exponential backoff on errors
+      - *Exit condition:* Don't rely only on time — also exit when `next_seq` stops moving for 3-5 consecutive polls (drops back quickly after last message)
+      - *Jitter + cap:* Add jitter to burst polls, cap minimum interval at 200-250ms to avoid thundering-herd on hot channels
+      - *Optional:* Extend burst while presence indicates active conversation (but seq-advance heuristic is usually enough)
     - Dedupe on `(channelId, seq)` or message_id — duplicate hints/retries become harmless
     - Polling/backoff = slow-path recovery when webhook fails
     - Presence/typing/heartbeat = ephemeral, polling is fine (no backfill needed)
