@@ -509,3 +509,84 @@ Advance cursor **only after** durable side effects succeed.
 ---
 
 *Appendix added from Portal1↔Portal2 design session, 2026-02-04*
+
+---
+
+## Appendix B: Persistent Data Model (SQLite) (Informative)
+
+*Non-normative schema for cursor + outbox pattern.*
+
+### B.1 `channel_cursors`
+
+```sql
+CREATE TABLE IF NOT EXISTS channel_cursors (
+  channel_id   TEXT PRIMARY KEY,
+  next_seq     INTEGER NOT NULL,    -- next seq to fetch/process (monotonic)
+  updated_at   INTEGER NOT NULL     -- unix seconds
+);
+```
+
+**Rules:**
+- Initialize `next_seq = 1` (or 0 for `after_seq` semantics)
+- Update only after durable side effects complete
+
+### B.2 `outbox`
+
+```sql
+CREATE TABLE IF NOT EXISTS outbox (
+  id             TEXT PRIMARY KEY,      -- uuid
+  channel_id     TEXT NOT NULL,
+  inbound_seq    INTEGER NOT NULL,      -- seq that caused this action
+  action         TEXT NOT NULL,         -- "send_message", "react", etc.
+  payload_json   TEXT NOT NULL,
+  status         TEXT NOT NULL,         -- "pending"|"sending"|"sent"|"failed"
+  attempt_count  INTEGER NOT NULL DEFAULT 0,
+  last_error     TEXT,
+  provider_msg_id TEXT,
+  created_at     INTEGER NOT NULL,
+  updated_at     INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status, updated_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_inbound ON outbox(channel_id, inbound_seq);
+
+-- Prevents double-enqueue for same inbound cause
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_outbox_dedupe
+ON outbox(channel_id, inbound_seq, action);
+```
+
+### B.3 `processed_messages` (Optional)
+
+Belt-and-suspenders dedupe beyond cursor:
+
+```sql
+CREATE TABLE IF NOT EXISTS processed_messages (
+  channel_id   TEXT NOT NULL,
+  seq          INTEGER NOT NULL,
+  processed_at INTEGER NOT NULL,
+  PRIMARY KEY (channel_id, seq)
+);
+```
+
+TTL: Delete rows older than 7-30 days periodically.
+
+### B.4 Transaction Pattern
+
+For each inbound message `m(seq)`:
+
+1. **Enqueue outbox (txn):**
+   - Insert outbox row (`pending`) with unique `(channel_id, inbound_seq, action)`
+   - Commit
+
+2. **Deliver outbox (retryable worker):**
+   - Mark `sending` → call provider → mark `sent` + `provider_msg_id`
+
+3. **Advance cursor (txn):**
+   - Only after all outbox actions for `inbound_seq` are `sent`
+   - Update `channel_cursors.next_seq = inbound_seq + 1`
+
+**Crash safety:** Either outbox resumes delivery, or cursor never advanced so inbound replays. Outbox uniqueness prevents double intent creation.
+
+---
+
+*Appendix B from Portal2, 2026-02-04*
