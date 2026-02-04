@@ -400,6 +400,58 @@ When `agentBusy()` is true:
 - Loop yields at 250-500ms during burst, 1-2s otherwise
 - Heartbeat should report `typing` (not stale) to avoid "agent dead" false positives
 
+### A.6.1 Presence Heartbeat (Separate from Message Loop)
+
+**Goal:** Keep presence fresh during 5-15s LLM calls without coupling to message processing.
+
+**Pattern:** Run presence heartbeat on fixed cadence (1-2s), independent of message loop.
+
+```ts
+// Global agent runtime state
+let busyUntilMs = 0
+
+function setBusy(isBusy: boolean) {
+  busyUntilMs = isBusy ? (Date.now() + 30_000) : 0  // safety cap
+}
+
+function agentBusy() {
+  return Date.now() < busyUntilMs
+}
+
+// Presence loop (independent, never blocked by message processing)
+async function presenceLoop() {
+  while (true) {
+    const status = agentBusy() ? "typing" : "online"
+    await postHeartbeat({ status, ts_ms: Date.now() })
+    await sleep(1500)  // 1-2s cadence
+  }
+}
+
+// During LLM call
+async function generateReply(...) {
+  setBusy(true)
+  try {
+    return await callLLM(...)
+  } finally {
+    setBusy(false)
+  }
+}
+```
+
+**Status mapping:** (UI ignores `"thinking"`)
+- `"typing"` — LLM call in flight or about to post response
+- `"online"` — idle
+
+**Rules:**
+- Never block heartbeats on message loop
+- Don't retry-storm while busy (cheap yields only)
+- Don't fabricate progress — `"typing"` is "working", not "sent"
+
+**Optional telemetry:** If API supports extra fields:
+```json
+{ "status": "typing", "busy_reason": "llm_call", "eta_ms": 8000 }
+```
+
 ### A.7 Seq Regression Detection
 
 Track `lastObservedNextSeq` per channel. If `resp.next_seq < lastObservedNextSeq`:
