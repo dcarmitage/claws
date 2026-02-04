@@ -642,3 +642,23 @@ For each inbound message `m(seq)`:
 ---
 
 *Appendix B from Portal2, 2026-02-04*
+
+### A.6 Reference Backoff / Error Policy
+
+**Classification:**
+- `busy`: HTTP 429, `Retry-After` present, sqlite_busy, queue full
+- `retry`: network errors, timeouts, HTTP 5xx, temporary DNS
+- `fatal`: HTTP 4xx (except 429), auth failures, schema mismatch
+
+**Backoff:**
+- `busy`: multiply by 1.5 (cap 5s polling, 60s outbound), ±20% jitter
+- `retry`: multiply by 2.0 (cap 30s polling, 5m outbound), jitter
+- Success: reset to baseline (1s polling, 5s outbound)
+
+**Retry-After:** Sleep `max(backoff_ms, retry_after_ms)` with jitter
+
+**Logging (throttled):**
+- `logOncePer(key, windowMs)` — poll 60s, outbound 300s, DB 10s
+- Include `suppressed` counter; emit `recovered` on first success
+
+**Note:** "Busy" ≠ "dead" — continue heartbeats, avoid false offline alarms
