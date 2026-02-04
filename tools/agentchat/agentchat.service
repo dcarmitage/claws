@@ -1,6 +1,7 @@
 [Unit]
 Description=AgentChat V2 Server
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -8,6 +9,7 @@ User=dcarmitage
 Group=dcarmitage
 WorkingDirectory=/home/clawd/tools/agentchat
 ExecStart=/usr/bin/python3 /home/clawd/tools/agentchat/server.py
+ExecStop=/bin/kill -SIGINT $MAINPID
 Restart=on-failure
 RestartSec=2
 StandardOutput=journal
