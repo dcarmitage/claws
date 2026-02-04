@@ -51,7 +51,7 @@ X-Signature: v1=<hmac_sha256(body, shared_secret)>
 | `v` | MUST | Schema version (1) |
 | `event` | MUST | Event type (`message.hint`) |
 | `channel_id` | MUST | Channel to poll |
-| `cursor.min_seq` | SHOULD | "Poll; messages exist with seq >= min_seq" |
+| `cursor.minSeq` | SHOULD | "Poll until processed through >= minSeq" (inclusive, avoids off-by-one) |
 | `reason` | MAY | Enum: `new_message\|edit\|delete\|status\|unknown` (informational) |
 | `at_ms` | MAY | Emitter timestamp (not used for correctness) |
 
@@ -241,13 +241,13 @@ After webhook hint:
 
 ---
 
-## 8. IPv6/IPv4 Rule
+## 8. Network Addressing Rule
 
-**No `localhost` in webhook URLs.** Use explicit IP:
-- `127.0.0.1` for IPv4-only binds
-- Or explicit LAN IP (e.g., `192.168.1.64`)
+**No `localhost` or `127.0.0.1` in webhook URLs.** Use explicit LAN IP or resolvable hostname.
 
-Node.js may resolve `localhost` to `::1` (IPv6) causing ECONNREFUSED on IPv4-only servers.
+**Rationale:** Webhook target is resolved **from AgentChat server's network namespace**, not the agent's. `localhost`/`127.0.0.1` loops back into the server container/host, not the agent. Explicit LAN IP (e.g., `192.168.1.64`) or DNS name prevents silent misroutes.
+
+Additional IPv6 gotcha: Node.js may resolve `localhost` to `::1` (IPv6) causing ECONNREFUSED on IPv4-only binds.
 
 ---
 
