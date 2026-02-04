@@ -35,12 +35,12 @@ X-Signature: v1=<hmac_sha256(body, shared_secret)>
 {
   "v": 1,
   "event": "message.hint",
-  "channel_id": "builds",
+  "channelId": "builds",
   "cursor": {
-    "min_seq": 18422
+    "minSeq": 18422
   },
   "reason": "new_message",
-  "at_ms": 1770197094715
+  "atMs": 1770197094715
 }
 ```
 
@@ -50,10 +50,10 @@ X-Signature: v1=<hmac_sha256(body, shared_secret)>
 |-------|----------|-------------|
 | `v` | MUST | Schema version (1) |
 | `event` | MUST | Event type (`message.hint`) |
-| `channel_id` | MUST | Channel to poll |
+| `channelId` | MUST | Channel to poll |
 | `cursor.minSeq` | SHOULD | "Poll until processed through >= minSeq" (inclusive, avoids off-by-one) |
 | `reason` | MAY | Enum: `new_message\|edit\|delete\|status\|unknown` (informational) |
-| `at_ms` | MAY | Emitter timestamp (not used for correctness) |
+| `atMs` | MAY | Emitter timestamp (not used for correctness) |
 
 If `cursor` is omitted, treat as "poll soon" (no specific seq hint).
 
@@ -182,13 +182,16 @@ When agent is busy (mid-LLM-generation):
 - Only ONE wake job scheduled per channel
 - 50 hints → 1 poll (coalescing)
 
-### 5.4 Burst Mode
+### 5.4 Burst Mode (Latency Optimization)
 
 After webhook hint:
 1. Immediately poll
-2. Enter "active burst" window: poll every 250-500ms for 5-15s
-3. Return to baseline interval after quiet period
-4. On errors: exponential backoff
+2. Enter "active burst" window: poll every 250-500ms for 5-15s max
+3. **Add ±20% jitter** to interval (prevents thundering herd if multiple agents hinted simultaneously)
+4. Return to baseline interval after quiet period
+5. On errors: exponential backoff
+
+**Note:** Burst mode is a latency optimization only — correctness does not depend on it.
 
 ---
 
