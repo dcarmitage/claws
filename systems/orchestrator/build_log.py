@@ -32,13 +32,18 @@ def cmd_start(args):
 
 
 def cmd_task_start(args):
-    append_event(args.build_id, {
+    event = {
         "timestamp": now(),
         "build_id": args.build_id,
         "event": "task_start",
         "task_id": args.task_id,
         "task_name": args.task_name,
-    })
+    }
+    if args.spec:
+        event["spec"] = args.spec
+    if args.taskboard:
+        event["taskboard"] = args.taskboard
+    append_event(args.build_id, event)
 
 
 def cmd_task_done(args):
@@ -66,6 +71,33 @@ def cmd_validate(args):
         "cmd": args.cmd or "",
         "output": args.output or "",
     })
+
+
+def cmd_judge_eval(args):
+    logic_passed = float(args.logic_score) >= 8.0
+    consistency_passed = float(args.consistency_score) >= 8.0
+    overall_passed = logic_passed and consistency_passed
+    append_event(args.build_id, {
+        "timestamp": now(),
+        "build_id": args.build_id,
+        "event": "judge_eval",
+        "task_id": args.task_id,
+        "commit": args.commit,
+        "logic_judge": {
+            "score": float(args.logic_score),
+            "tier": args.logic_tier,
+            "passed": logic_passed,
+        },
+        "consistency_judge": {
+            "score": float(args.consistency_score),
+            "tier": args.consistency_tier,
+            "passed": consistency_passed,
+        },
+        "overall_passed": overall_passed,
+        "output_path": args.output_path or "",
+    })
+    status = "PASS" if overall_passed else "FAIL"
+    print(f"Judge eval logged: {args.task_id} — Logic {args.logic_score} ({args.logic_tier}), Consistency {args.consistency_score} ({args.consistency_tier}) → {status}")
 
 
 def cmd_summary(args):
@@ -111,6 +143,8 @@ def main():
     p.add_argument("build_id")
     p.add_argument("task_id")
     p.add_argument("task_name")
+    p.add_argument("--spec", default=None, help="Path to task spec file")
+    p.add_argument("--taskboard", default=None, help="Path to taskboard file")
     p.set_defaults(func=cmd_task_start)
 
     p = sub.add_parser("task-done")
@@ -131,6 +165,17 @@ def main():
     p.add_argument("--cmd", default=None)
     p.add_argument("--output", default=None)
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("judge-eval")
+    p.add_argument("build_id")
+    p.add_argument("task_id")
+    p.add_argument("commit")
+    p.add_argument("--logic-score", required=True)
+    p.add_argument("--logic-tier", required=True)
+    p.add_argument("--consistency-score", required=True)
+    p.add_argument("--consistency-tier", required=True)
+    p.add_argument("--output-path", default=None)
+    p.set_defaults(func=cmd_judge_eval)
 
     p = sub.add_parser("summary")
     p.add_argument("build_id")

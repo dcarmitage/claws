@@ -5,9 +5,11 @@
 ## System Status (as of 2026-02-03)
 
 ### What's Working
-- **Camera Service:** `camservice.service` on port 5080 — persistent Picamera2, ~60ms snaps (12x faster than rpicam-still)
+- **OpenClaw 2026.2.2-3:** Upgraded from Clawdbot, gateway running as systemd service
+- **AgentChat Plugin:** Channel plugin installed, polls every 5s, auto-responds to messages
+- **Camera Service:** `camservice.service` on port 5080 — persistent Picamera2, ~60ms snaps
 - **Parakeet STT:** systemd service on port 5092, auto-starts, 10-20x realtime
-- **Voice transcription:** Clawdbot auto-transcribes all inbound OGG via `tools.media.audio` config
+- **Voice transcription:** OpenClaw auto-transcribes all inbound OGG via `tools.media.audio` config
 - **Camera:** IMX708 Wide, via camera service (preferred) or `rpicam-still` (fallback)
 - **Microphone:** USB PnP Sound Device, `arecord` works
 - **Hailo-8 NPU:** Active, 585 FPS on YOLOv6n, CNN vision models only
@@ -41,7 +43,7 @@
 - **Camera:** Use `rpicam-still` directly, don't rely on node pairing
 
 ## Active Projects
-- **🚀 Armada Scaling (CURRENT):** Multi-agent coordination infrastructure. Plan: self-host Moltslack for Discord-like agent community. Spec: `systems/ARMADA_SCALING.md`. Research complete, ready to implement.
+- **🚀 Armada Orchestration Stack (CURRENT):** Multi-agent coordination system on Cloudflare Durable Objects. Master doc: Polylogue "Armada Orchestration Stack" (slug: armada-orchestration-stack-4Tzc2z, 26KB, v4). Architecture: 4 layers (L0 ChatRoom DO, L1 TaskBoard DO, L2 Council of Judges, L3 Strategy Library). Wave-based implementation plan. **NEXT: Mudpaw specs Wave 1 (DO TaskBoard MVP), then we build it.** Research phase complete (Swarms, Agent Relay, beads_rust, ARC-AGI).
 - **Camera/Streaming Platform:** Full HLS streaming with audio, web viewer with designed control bar. Tagged `v1.1-live-sync`. Watch page: `http://192.168.1.64:5080/stream/watch`. Known issue: live sync still not perfect — needs more testing.
 - **Build Orchestrator:** `systems/orchestrator/` — task logging, taskboard parsing, reporting. Tagged `v1.0-orchestrator`. Use `build_log.py` to instrument every future build.
 - **Media Catalog:** SQLite + FTS5, multi-device aware, auto-indexes captures. Working.
@@ -51,65 +53,47 @@
 
 ## Build Methodology
 **Portal1 Build Method v2** — documented in `systems/orchestrator/HEURISTICS.md`
-- DISCUSS → SPEC → TASKBOARD → [SPAWN → VERIFY]×N → QA → TAG
+- DISCUSS → SPEC → TASKBOARD → [SPAWN → VERIFY → JUDGE]×N → QA → TAG
 - One sub-agent per task, exact code in briefs, verify between each
 - Three outputs: code + docs + learning
-- Use `build_log.py` for every build
-- 8 heuristics (H1-H8), 3 eval heuristics (E1-E3)
+- Use `build_log.py` for every build (now with `--spec`/`--taskboard` on task-start)
+- 15 heuristics (H1-H15), 6 eval heuristics (E1-E6)
+- H14: Strategy Council — spawn diverse subagents for planning, convergence = priority
+- H15: Simulation ≠ Production — close the gap immediately, don't accumulate false confidence
 - H8: Monitor own context. Alert at 70%. Compact at 80%.
 
+## Dual-Judge Evaluation System (2026-02-05)
+**Purpose:** Quality gate — two LLM judges score every task after tests pass. Both must score >= 8.0/10.
+**Flow:** `task-done` → PostToolUse hook fires → reads spec/taskboard from build log → runs logic + consistency judges via OpenClaw → gates advancement
+**Key files:** `evals/` directory (scripts, prompts, hooks, results), `skills/dual-judge/SKILL.md` (`/judge` command)
+**Skills:** `/judge` (manual eval), `/learn` (analyze learnings), `/integrate` (persist to memory), `/save-memory` (end-of-session dump)
+**Integrated with:** Ralph loops (PROMPT_build.md step 4, guardrail, loop.sh push gate), build_log.py, build_report.py, HEURISTICS.md (E4-E6), CHECKLISTS.md
+**Strategy Council (2026-02-05):** 5-agent planning experiment validated the pattern — convergence signal identified "live judge-gated build loop" as unanimous first priority. See `memory/2026-02-05.md`.
+**Details:** See `memory/2026-02-05.md`
+
 ## Key Lessons Learned
-1. Hailo-8 ≠ Hailo-10H. CNN only. Don't try to run transformers on it.
-2. Parakeet >> Whisper on Pi CPU (faster, better punctuation, lighter)
-3. Auto-injected files are reliable memory. Everything else must be explicitly read.
-4. Systemd services keep models warm — cold start penalty is huge on Pi.
-5. `rpicam-still` not `libcamera-hello`
-6. Pi 5 has no hardware H.264 encoder
-7. Persistent Picamera2 service = 60ms snaps vs 760ms rpicam-still (keep camera warm)
-8. rpicam-vid raw h264 has NO timestamps — use `--libav-format mpegts` for piped output
-9. Picamera2 must be fully closed + reopened after rpicam-vid (broken pipe otherwise)
-10. Plugin `registerCommand` returns `{ text, mediaUrl }` — use `file:///path` for local files
-11. Python `global` keyword required to modify module-level vars in functions (easy to miss)
-12. Unix `tee` is simpler than ffmpeg tee muxer for saving raw streams
-13. exFAT needs `uid=,gid=` mount options for proper permissions
-14. Catalog DB should live on SD card (always available), index media across all devices
-15. hls.js `liveSyncDuration: 999999` at INIT = broken (can't find sync point). At RUNTIME = works fine for disabling auto-sync.
-16. hls.js fatal errors: MUST destroy + null the instance, or poll won't re-init (sees `hls !== null`)
-17. 404 responses need CORS headers + plain text body (HTML error pages break hls.js)
-18. HUD re-encoding takes ~8-10s for first segment — hls.js needs retry patience
-19. Clean up HLS segments on stream stop — stale files cause ghost playback
-20. Always test with a minimal page first to isolate issues (e.g. `/stream/test`)
-21. **NEVER claim something works unless you've tested and validated it yourself.** Code existing ≠ code working. Never `git add -A` without reviewing. Never present untested code as completed work. If you haven't verified it, say "I wrote it but haven't tested it." Verify first, answer second. (H11 — Mudpaw's direct instruction, 2026-02-01 23:06 EST)
+*Full list: 31 lessons in LEARN.md. Top lessons by category:*
+
+**Hardware:** Hailo-8 = CNN only (no transformers). Parakeet >> Whisper on Pi CPU. No hw H.264 on Pi 5. Keep Picamera2 warm via service (60ms vs 760ms).
+
+**Process (H11):** NEVER claim something works unless tested. Verify first, answer second. (Mudpaw's direct instruction, non-negotiable.)
+
+**Agent Comms:** IPv6 gotcha (`localhost` → `::1`). Seq-based cursors, not timestamps. Dedupe after processing, not before. CLAIM before working. Cooldown window between posts.
+
+**OpenClaw:** Plugin manifests need `"channels"`. SIGUSR1 reloads config only, not code — restart service for code changes. Version skew kills plugins (`openclaw gateway install`).
 
 ## TODO
 
-### Priority: Armada Scaling
-- [ ] **Install Moltslack on Portal1** (NEXT)
-- [ ] Register Portal1 + Portal2 as agents
-- [ ] Create #armada-general channel
-- [ ] Test basic messaging
-- [ ] Write Clawdbot skill for Moltslack
-- [ ] Implement presence (heartbeat loop)
-
-### Infrastructure (Done)
-- [x] Camera service (persistent Picamera2, ~60ms snaps)
-- [x] Plugin commands (/snap, /clip, /stream, /listen, /catalog)
-- [x] USB media storage + auto-mount
-- [x] Media catalog (SQLite + FTS5 + multi-device)
-- [x] Second Pi node online (Portal2, Pi 4, 192.168.1.44)
-- [x] AgentChat bot-to-bot communication (100 messages)
-- [x] Exa Search configured (both machines)
-- [x] Web player (viewfinder UI with scrubber, pause, LIVE sync)
-- [x] Drive handshake system (UUID-based, online/offline tracking)
+### Priority: Armada Orchestration Stack
+- [ ] **Live judge-gated build loop** (Strategy Council unanimous priority)
+- [ ] Mudpaw specs Wave 1
+- [ ] Build Wave 1: DO TaskBoard MVP
+- [ ] Waves 2-5: ChatRoom, Orchestrator loop, Quality+memory, Scale
 
 ### Backlog
-- [ ] AI auto-tagging via Hailo-8 YOLO on ingest
-- [ ] Speaker bonnet setup + TTS
-- [ ] Intercom loop (mic → STT → LLM → TTS → speaker)
-- [ ] Scrubber polish (rewind/pause edge cases)
-- [ ] Snap-from-stream (capture frame while watching live)
-- [ ] Quick-clip extraction (mark IN/OUT, send to Telegram)
-- [ ] Media catalog web UI / browsing
+- [ ] Speaker bonnet + TTS + Intercom loop
+- [ ] AI auto-tagging via Hailo-8 YOLO
+- [ ] Media catalog web UI
 
 ## File Map
 - `AGENTS.md` — Operating instructions, startup sequence
@@ -151,7 +135,7 @@ Drive handshake:
   Unplug → items show offline but still searchable
 ```
 
-*Last updated: 2026-02-03 14:56 EST by Portal1 🌀*
+*Last updated: 2026-02-05 16:30 EST — Dual-Judge system built*
 
 ## The Armada
 
@@ -167,67 +151,25 @@ Drive handshake:
 - **SSH bidirectional** — key auth both directions
 - **Exa Search** — API configured on both machines (`~/.secrets/exa.json`)
 
-### 🚀 Scaling Project (2026-02-03)
-**Goal:** Discord-like community of AI agents — channels, presence, collaboration.
-
-**Research completed:**
-- Moltslack (moltslack.com) — 45 agents online, self-hostable, full feature set
-- Mom (badlogic/pi-mono) — per-channel context, events system, skills pattern
-
-**Decision:** Self-host Moltslack on Portal1 as private instance.
-
-**Plan:** `systems/ARMADA_SCALING.md`
-1. Install Moltslack + Agent Relay on Portal1
-2. Register both agents
-3. Create private channels (#armada-general)
-4. Test coordination
-5. If friction → extend AgentChat instead
-
-**Fallback:** AgentChat remains untouched as backup.
+### 🚀 Armada Orchestration Stack (2026-02-04)
+**Goal:** Self-sustaining agent flywheel. 4 layers on Cloudflare DOs (L0 ChatRoom, L1 TaskBoard, L2 Council of Judges, L3 Strategy Library). 5-wave implementation plan.
+**Master doc:** Polylogue (armada-orchestration-stack-4Tzc2z, 26KB, v4)
+**Details:** `memory/2026-02-04.md`, `systems/ARMADA_SCALING.md`
 
 ### Key Files
-- `systems/ARMADA_SCALING.md` — Full scaling project spec
-- `systems/ARMADA.md` — Original armada vision (Researcher → CTO/PM → Trader)
-- `memory/2026-02-01-teaching-log.md` — Portal2 onboarding record
+- `systems/ARMADA_SCALING.md` — Full scaling spec
+- `systems/ARMADA.md` — Original vision
 - `tools/armada-sync.sh` — Push/pull shared files between agents
 
-## Knowledge Search System (QMD)
-- **Status:** BM25 working (0.37s), vector search working but weak (1.5s), installed at /tmp/qmd-install
-- **CLI:** `/home/clawd/tools/qmd-search.sh [search|vsearch|reindex|status]`
-- **Index:** 16 markdown files, 40 embedded chunks, 3.3MB SQLite DB
-- **Models:** embeddinggemma 300M at ~/.cache/qmd/models/ (328MB)
-- **Upgrade path:** documented in `systems/qmd/UPGRADE_PATH.md`
-- **Next steps:** Better embedding model (nomic-embed), hybrid BM25+vector fusion, API query expansion
+## QMD (Knowledge Search)
+BM25 working (0.37s). CLI: `tools/qmd-search.sh`. Details: `systems/qmd/UPGRADE_PATH.md`
 - **Key finding:** BM25 beats vector search for our well-structured corpus. Vector becomes more valuable as corpus grows.
 
 ## AgentChat V2 (2026-02-03)
+HTTP :9090, WebSocket :9091, SQLite, dashboard. 47 tests. Details: `memory/2026-02-03.md`
+**Mudpaw insight:** "Each agent is its own independent VM. Independent aspects (SOUL, MEMORY) + shared aspects (tasks, specs, chat)."
 
-**Built:** Complete V2 system on Portal1 infrastructure
-
-**Architecture:**
-- HTTP API on :9090, WebSocket on :9091
-- SQLite with agents, channels, messages, tasks, notifications
-- Dashboard at http://192.168.1.64:9090
-
-**Key insight from Mudpaw:**
-> "Each agent is its own independent VM. They have independent aspects (SOUL.md, MEMORY.md) and shared aspects (tasks, specs, chat)."
-> "I want every agent to be independently motivated to contribute." (V3: incentives)
-
-**Test suite:** 47 tests in `tools/agentchat/test.sh`
-
-**Philosophy captured:** `systems/PRINCIPLES.md`
-- TDD: Write tests alongside code
-- Documentation as code: HANDOFF.md required
-- Verify before claiming: Run it, don't assume
-
-**Handoff pattern:** When context is high, update HANDOFF.md with:
-- What's done, what's not
-- Commands to verify/continue
-- Context for next builder
-
-## Learnings
-
-1. **Tests compound** — 47 tests now catch regressions later
-2. **Handoff docs survive compaction** — Better than relying on memory
-3. **Philosophy propagates via AGENTS.md** — Add to reading list, all agents learn it
-4. **"All we can do is our best, and keep learning every day"** — Mudpaw
+## Core Rules (Mudpaw's Direct Instructions)
+0. **NEVER quit before the job is done.** Work until it works. No "let's wrap up" or "debug tomorrow." HARD rule.
+1. **NEVER claim done until tested (H11).** Verify first, answer second. Non-negotiable.
+2. **"All we can do is our best, and keep learning every day"** — Mudpaw

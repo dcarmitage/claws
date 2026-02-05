@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/clawd/evals/hooks/post_task_done.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

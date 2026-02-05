@@ -7,8 +7,10 @@
 ## 🟢 SESSION START (before first reply)
 ```
 □ Run health check: bash tools/health-check.sh
+□ Run handoff eval: bash scripts/handoff_eval.sh
+□ Run startup eval: bash evals/run_startup_eval.sh
 □ Read MEMORY.md
-□ Read LEARN.md  
+□ Read LEARN.md
 □ Read memory/YYYY-MM-DD.md (today + yesterday)
 □ Read CHECKLISTS.md (until internalized — then weekly)
 □ Check context: session_status tool
@@ -23,6 +25,8 @@
 □ Dependency graph clear? (H4)
 □ Announced to human what I'm about to do? (H9)
 □ Timeout set on all exec calls? (H9)
+□ After task tests pass: bash evals/run_dual_judge_eval.sh (E4)
+□ Both judges >= 8.0 before advancing to next task (E4)
 ```
 
 ## ✅ POST-MILESTONE (after any build/experiment/discovery completes)
@@ -46,6 +50,7 @@
 
 ## 🏁 END-OF-SESSION (before compact or signing off)
 ```
+□ Run session close: bash scripts/session_close.sh (H13)
 □ git status — anything untracked that matters? (H12)
 □ git diff — uncommitted changes? (H12)
 □ MEMORY.md reflects current state? (H11)

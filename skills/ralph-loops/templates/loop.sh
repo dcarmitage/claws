@@ -87,12 +87,31 @@ while true; do
         --model opus \
         --verbose
 
-    # Push changes after each iteration (if git is available)
+    # Push changes after each iteration (if git is available and judges passed)
     if [ "$CURRENT_BRANCH" != "no-git" ]; then
-        git push origin "$CURRENT_BRANCH" 2>/dev/null || {
-            echo "Creating remote branch..."
-            git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
-        }
+        LAST_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+        JUDGE_RESULT_FILE="/home/clawd/evals/results/*_*.json"
+        JUDGE_PASSED=true
+
+        # Check if the most recent judge result for this commit passed
+        LATEST_RESULT=$(ls -t /home/clawd/evals/results/*.json 2>/dev/null | head -1)
+        if [ -n "$LATEST_RESULT" ]; then
+            RESULT_COMMIT=$(jq -r '.commit // ""' "$LATEST_RESULT" 2>/dev/null)
+            if [ "$RESULT_COMMIT" = "$LAST_COMMIT" ]; then
+                RESULT_PASSED=$(jq -r '.overall_passed // false' "$LATEST_RESULT" 2>/dev/null)
+                if [ "$RESULT_PASSED" != "true" ]; then
+                    JUDGE_PASSED=false
+                    echo "⚠️  Judge gate: last commit did not pass dual-judge evaluation. Skipping push."
+                fi
+            fi
+        fi
+
+        if [ "$JUDGE_PASSED" = true ]; then
+            git push origin "$CURRENT_BRANCH" 2>/dev/null || {
+                echo "Creating remote branch..."
+                git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
+            }
+        fi
     fi
 
     # Brief pause between iterations

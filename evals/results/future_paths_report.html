@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armada: 5 Futures</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+
+  .header { text-align: center; padding: 40px 20px 20px; }
+  .header h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .header p { font-size: 14px; color: #888; max-width: 600px; margin: 0 auto; }
+
+  .paths-grid { display: flex; gap: 12px; padding: 20px; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+
+  .path-btn {
+    flex: 1 1 200px;
+    max-width: 220px;
+    background: #151520;
+    border: 2px solid #252535;
+    border-radius: 16px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+    position: relative;
+  }
+  .path-btn:hover { border-color: #4a4a6a; transform: translateY(-2px); }
+  .path-btn.active { border-color: var(--accent); box-shadow: 0 0 20px var(--glow); }
+
+  .path-btn .emoji { font-size: 32px; margin-bottom: 8px; }
+  .path-btn .name { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .score-gold { background: #3d3510; color: #ffd700; }
+  .score-silver { background: #2a2a35; color: #c0c0c0; }
+
+  .detail-panel {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    display: none;
+  }
+  .detail-panel.visible { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .thesis-box {
+    background: #151520;
+    border: 1px solid #252535;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #ccc;
+    border-left: 3px solid var(--accent);
+  }
+
+  .steps-list { list-style: none; }
+  .step-item {
+    background: #151520;
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .step-num {
+    position: absolute;
+    top: 16px;
+    left: -12px;
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .step-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: #999; line-height: 1.5; }
+  .step-tags { margin-top: 8px; display: flex; gap: 6px; }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .tag-effort-small { background: #0d2818; color: #4ade80; }
+  .tag-effort-medium { background: #2d2000; color: #fbbf24; }
+  .tag-effort-large { background: #2d0a0a; color: #f87171; }
+  .tag-impact-high { background: #0a1a2d; color: #60a5fa; }
+  .tag-impact-medium { background: #1a1a2d; color: #a78bfa; }
+
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .meta-box {
+    flex: 1;
+    background: #151520;
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .meta-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 6px; }
+  .meta-text { font-size: 13px; color: #bbb; line-height: 1.5; }
+
+  .scores-breakdown {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .score-item {
+    text-align: center;
+    background: #151520;
+    border-radius: 8px;
+    padding: 10px 6px;
+  }
+  .score-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin-bottom: 4px; }
+  .score-val { font-size: 18px; font-weight: 700; }
+
+  .footer { text-align: center; padding: 30px; font-size: 12px; color: #444; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🚀 Armada: 5 Futures</h1>
+  <p>5 independent agents analyzed the full codebase and predicted the best 5-step path forward. Each had a different strategic lens. Pick your path.</p>
+</div>
+
+<div class="paths-grid" id="pathsGrid"></div>
+<div class="detail-panel" id="detailPanel"></div>
+
+<div class="footer">
+  Generated 2026-02-05 by 5 parallel subagents, each with full codebase context.<br>
+  Scores: Alignment + Feasibility + Impact + Momentum + Risk (0-10 each)
+</div>
+
+<script>
+const paths = [
+  {
+    id: "infrastructure",
+    name: "Infrastructure",
+    emoji: "🏗️",
+    accent: "#60a5fa",
+    glow: "rgba(96,165,250,0.15)",
+    thesis: "The Armada has strong local services but lacks operational scaffolding — monitoring, backups, CI, and the cloud coordination layer needed to graduate from a fragile two-node hobby cluster into a self-healing multi-agent platform.",
+    scores: { alignment: 6.5, feasibility: 9.0, impact: 7.5, momentum: 5.0, risk: 9.0 },
+    overall: 7.4,
+    tier: "SILVER",
+    steps: [
+      { n: 1, title: "Commit the uncommitted and fix git hygiene", desc: "17 modified + 17 untracked files including the entire evals/ directory. One disk failure from losing the dual-judge system. Commit, tag, and set up a staleness cron.", effort: "small", impact: "high" },
+      { n: 2, title: "Automated off-device backups via git remote", desc: "Everything lives on a single SD card with no remote origin. Set up a private Git remote and systemd timer that pushes daily.", effort: "small", impact: "high" },
+      { n: 3, title: "Service watchdog with auto-restart and alerting", desc: "7+ systemd services with no centralized monitoring. Build a watchdog timer that checks health, auto-restarts, and alerts via Telegram.", effort: "medium", impact: "high" },
+      { n: 4, title: "Cloudflare Workers scaffold for Wave 1 TaskBoard DO", desc: "Zero CF Workers code exists. Scaffold wrangler project, deploy a hello-world DO, verify WebSocket from both Pis.", effort: "medium", impact: "high" },
+      { n: 5, title: "Unified service registry and agent bootstrap", desc: "Services discovered by hardcoded IPs scattered across configs. Build a JSON endpoint for auto-discovery.", effort: "medium", impact: "medium" }
+    ],
+    risk: "Steps 1-3 are low-risk housekeeping. Step 4 introduces a new deployment target. Step 5 risks over-engineering at 2 agents.",
+    payoff: "System graduates from 'works when Daniel is watching' to 'recovers when Daniel is sleeping.'"
+  },
+  {
+    id: "quality",
+    name: "Quality",
+    emoji: "🔬",
+    accent: "#a78bfa",
+    glow: "rgba(167,139,250,0.15)",
+    thesis: "The dual-judge system is architecturally sound but operationally untested. Close the gap between simulation-verified and production-proven, then build calibration infrastructure that prevents silent quality decay.",
+    scores: { alignment: 8.0, feasibility: 8.5, impact: 8.5, momentum: 9.5, risk: 8.0 },
+    overall: 8.5,
+    tier: "GOLD",
+    steps: [
+      { n: 1, title: "Build a self-test suite for the eval system itself", desc: "evals/ has zero test files. Build evals/test.sh with fixture-based tests for the full pipeline. E2 (Eval the Evals) made concrete.", effort: "medium", impact: "high" },
+      { n: 2, title: "Run the first live end-to-end judge cycle", desc: "Real task-start → work → task-done → hook fires → judges run → scores flow to build_log → build_report renders. The single most important validation.", effort: "small", impact: "high" },
+      { n: 3, title: "Judge score calibration with golden-set examples", desc: "5-8 spec+diff+expected-score-range examples spanning all tiers. Calibration script asserts scores land within expected bands.", effort: "medium", impact: "high" },
+      { n: 4, title: "Enrich judge evidence with actual test output", desc: "Logic judge receives a placeholder instead of real test results. Extend task-done with --test-output and feed through pipeline.", effort: "medium", impact: "medium" },
+      { n: 5, title: "Judge-result ledger with trend tracking", desc: "Persistent JSONL ledger + trend command in build_report.py for longitudinal quality signals. Git-tracked.", effort: "medium", impact: "medium" }
+    ],
+    risk: "Over-investing in judge infrastructure before confirming they work in production. First live cycle may reveal unexpected issues.",
+    payoff: "Quality system that is itself quality-assured: own test suite, production-proven, calibrated, and trend-tracked."
+  },
+  {
+    id: "multiagent",
+    name: "Multi-Agent",
+    emoji: "🤖",
+    accent: "#34d399",
+    glow: "rgba(52,211,153,0.15)",
+    thesis: "Don't build DO infrastructure yet — make Portal1 + Portal2 capable of unsupervised task handoff using existing primitives, so that Wave 1 DO work can itself be the first real multi-agent build.",
+    scores: { alignment: 9.5, feasibility: 7.0, impact: 9.5, momentum: 7.5, risk: 6.5 },
+    overall: 8.0,
+    tier: "SILVER",
+    steps: [
+      { n: 1, title: "Task Claim Protocol on AgentChat V2", desc: "AgentChat has a tasks table but no claim/ready/complete API. Three new endpoints turn chatting agents into coordinating workers.", effort: "small", impact: "high" },
+      { n: 2, title: "Implement Webhook Hint + Burst Polling", desc: "The webhook hint spec is fully designed but unimplemented. Wire it up for event-driven wake, cutting dispatch latency to milliseconds.", effort: "medium", impact: "high" },
+      { n: 3, title: "Cross-Agent Judge Gate for Shared Builds", desc: "Extend dual-judge so any agent's output gets quality-gated against the shared spec, regardless of who did the work.", effort: "medium", impact: "high" },
+      { n: 4, title: "Orchestrator Loop: onIdle → Dispatch → Verify", desc: "Idle agent checks ready queue → claims → executes → judges verify → next task dispatches. The minimum flywheel.", effort: "medium", impact: "high" },
+      { n: 5, title: "First Multi-Agent Build: DO TaskBoard as Dogfood", desc: "Use the local orchestrator to build the DO TaskBoard MVP as a multi-agent project. Dogfood the coordination stack.", effort: "large", impact: "high" }
+    ],
+    risk: "Over-engineering local AgentChat coordination when DOs will replace it. Portal2 (4GB) may struggle under load.",
+    payoff: "Portal1 and Portal2 operate as a genuine autonomous team. The DO TaskBoard exists as a real artifact built by this process."
+  },
+  {
+    id: "workflow",
+    name: "Workflow",
+    emoji: "⚡",
+    accent: "#fbbf24",
+    glow: "rgba(251,191,36,0.15)",
+    thesis: "The biggest daily friction is the gap between Mudpaw's intent and system readiness — sessions start slow, context gets lost, and there is no single view of what the Armada is doing.",
+    scores: { alignment: 8.5, feasibility: 8.5, impact: 8.0, momentum: 6.5, risk: 8.5 },
+    overall: 8.0,
+    tier: "SILVER",
+    steps: [
+      { n: 1, title: "Session Briefing Dashboard (One-Glance Status)", desc: "Single-page web dashboard: agent status, session summary, uncommitted changes, build/judge results. Glance instead of 60-second file reads.", effort: "medium", impact: "high" },
+      { n: 2, title: "Automatic Session Resume (/resume skill)", desc: "Compressed context snapshot at session end. Next session reads one file instead of reconstructing from 7 scattered files.", effort: "small", impact: "high" },
+      { n: 3, title: "Build Kickoff in One Command (/build)", desc: "Wraps DISCUSS-SPEC-TASKBOARD-BUILD into one entry point. 10 minutes of setup → one sentence from Mudpaw.", effort: "medium", impact: "high" },
+      { n: 4, title: "Cross-Session Build Continuity (CURRENT_BUILD.json)", desc: "Pointer file tracking active build, completed tasks, next task. Builds survive session boundaries.", effort: "small", impact: "high" },
+      { n: 5, title: "Telegram Quick Actions (/status, /resume)", desc: "Check system state and kick off work from phone. Always-available instead of desk-only.", effort: "medium", impact: "medium" }
+    ],
+    risk: "Over-automating could hide important state. Risk of building workflow tooling as a detour from the Armada vision.",
+    payoff: "Session starts go from 60 seconds of dead air to instant productivity. Regression between sessions is structurally eliminated."
+  },
+  {
+    id: "integration",
+    name: "Integration",
+    emoji: "🔗",
+    accent: "#f472b6",
+    glow: "rgba(244,114,182,0.15)",
+    thesis: "Powerful subsystems built in isolation — judges, loops, messaging, logging, search — but none talk to each other in production. Wiring them into closed loops creates the self-sustaining flywheel.",
+    scores: { alignment: 9.5, feasibility: 8.0, impact: 9.5, momentum: 9.5, risk: 7.0 },
+    overall: 8.7,
+    tier: "GOLD",
+    steps: [
+      { n: 1, title: "First Live Ralph Loop With Judge Gate", desc: "Run a real Ralph build loop with dual-judge active. Pick a small task, run loop.sh, verify the FULL chain: task-start → work → task-done → hook → judges → score gate → push gate.", effort: "small", impact: "high" },
+      { n: 2, title: "AgentChat Task Dispatch via Build Log Events", desc: "Connect AgentChat to the build orchestrator. When a taskboard loads, tasks dispatch to agents as AgentChat messages. The L0-to-L1 bridge.", effort: "medium", impact: "high" },
+      { n: 3, title: "QMD Auto-Index of Build Logs and Judge Results", desc: "Wire QMD to auto-index build logs, judge results, and daily memory. 'What went wrong last time we built X?' becomes answerable.", effort: "medium", impact: "medium" },
+      { n: 4, title: "Judge Score Feedback Into Prompt Selection", desc: "Use judge score trends to auto-adjust PROMPT_build.md guardrails. First adaptive feedback loop — system responds to quality trends.", effort: "medium", impact: "high" },
+      { n: 5, title: "Portal2 as Independent Judge Runner", desc: "Move judge execution to Portal2. Builder never judges own work. Council-of-judges pattern with diverse models.", effort: "large", impact: "high" }
+    ],
+    risk: "Premature optimization before basic loops work. Step 1 may reveal production bugs that compound in later steps.",
+    payoff: "The factory runs itself once the belts are connected. Human's role shifts to 'review scores and approve releases.'"
+  }
+];
+
+function renderButtons() {
+  const grid = document.getElementById('pathsGrid');
+  paths.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'path-btn';
+    btn.id = `btn-${p.id}`;
+    btn.style.setProperty('--accent', p.accent);
+    btn.style.setProperty('--glow', p.glow);
+    btn.innerHTML = `
+      <div class="emoji">${p.emoji}</div>
+      <div class="name">${p.name}</div>
+      <div class="score-badge ${p.tier === 'GOLD' ? 'score-gold' : 'score-silver'}">
+        ${p.overall.toFixed(1)} ${p.tier}
+      </div>
+    `;
+    btn.onclick = () => selectPath(p);
+    grid.appendChild(btn);
+  });
+}
+
+function selectPath(p) {
+  document.querySelectorAll('.path-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${p.id}`).classList.add('active');
+
+  const panel = document.getElementById('detailPanel');
+  panel.style.setProperty('--accent', p.accent);
+  panel.className = 'detail-panel visible';
+
+  const scoresHtml = Object.entries(p.scores).map(([k, v]) => {
+    const color = v >= 9 ? '#4ade80' : v >= 8 ? '#60a5fa' : v >= 7 ? '#fbbf24' : '#f87171';
+    return `<div class="score-item">
+      <div class="score-label">${k}</div>
+      <div class="score-val" style="color:${color}">${v.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+
+  const stepsHtml = p.steps.map(s => `
+    <li class="step-item">
+      <div class="step-num">${s.n}</div>
+      <div class="step-title">${s.title}</div>
+      <div class="step-desc">${s.desc}</div>
+      <div class="step-tags">
+        <span class="tag tag-effort-${s.effort}">${s.effort} effort</span>
+        <span class="tag tag-impact-${s.impact}">${s.impact} impact</span>
+      </div>
+    </li>
+  `).join('');
+
+  panel.innerHTML = `
+    <div class="thesis-box">${p.thesis}</div>
+    <div class="scores-breakdown">${scoresHtml}</div>
+    <ul class="steps-list">${stepsHtml}</ul>
+    <div class="meta-row">
+      <div class="meta-box">
+        <div class="meta-label">Risk</div>
+        <div class="meta-text">${p.risk}</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Payoff</div>
+        <div class="meta-text">${p.payoff}</div>
+      </div>
+    </div>
+  `;
+}
+
+renderButtons();
+// Auto-select highest scoring path
+const best = paths.reduce((a, b) => a.overall > b.overall ? a : b);
+selectPath(best);
+</script>
+
+</body>
+</html>

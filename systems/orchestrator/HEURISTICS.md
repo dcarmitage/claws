@@ -101,6 +101,32 @@ When we fix a bug, the fix itself becomes a test:
 
 These are cheap (just greps) and prevent regression.
 
+### E4: Judge After Verify
+**Every task gets dual-judge evaluation after tests pass.**
+
+Automated tests catch syntax and functional errors. Judges catch semantic drift — does the code actually fulfill the spec's intent? Tests passing is necessary but not sufficient. The dual-judge gate catches what tests miss: scope creep, spec misalignment, cross-file inconsistency.
+
+*Action: After `task-done` with tests passing, run `bash evals/run_dual_judge_eval.sh` before advancing to the next task. Both judges must score >= 8.0. No exceptions without documented root cause.*
+
+### E5: Judge Scores are Data
+**Track judge score trends. Investigate declines.**
+
+Individual scores matter less than trends. A task scoring 7.5 once is a data point. Three tasks in a row scoring 7.5 is a signal. Declining consistency scores across a build usually mean the spec drifted from reality as implementation progressed.
+
+*Action: After each build, review judge scores in `build_report.py metrics`. If average scores decline session-over-session, investigate before the next build. Common causes: stale specs, scope creep, context degradation (H3).*
+
+### E6: Failed Judges Require Root Cause
+**Never skip a judge failure without analysis.**
+
+A judge scoring < 8.0 is not a nuisance to retry — it's a signal that something is wrong. The fix is not "run the judge again" or "override the threshold." The fix is understanding why the score was low and addressing the root cause.
+
+*Action: When a judge fails:*
+1. *Read the full judge output (saved in `evals/results/`)*
+2. *Identify which claims were REFUTED or which checks were misaligned*
+3. *Fix the underlying issue (code, spec, or test)*
+4. *Re-run the judge to confirm the fix*
+5. *Log the root cause in daily memory*
+
 ---
 
 ## Improvement Tracking
@@ -169,6 +195,31 @@ This is a trust violation. Mudpaw cannot make decisions based on false informati
 5. *Untested code gets a clear label: `DRAFT`, `UNTESTED`, or lives in a separate branch*
 
 Evidence: Mudpaw caught it. "that's lying. STOP EVERYTHING." Trust is the foundation. This heuristic is non-negotiable.
+
+### H14: Strategy Council — Diverse Lenses Find Different Things
+**When planning what to do next, spawn multiple independent agents with different strategic lenses and compare.**
+
+On 2026-02-05, we ran 5 subagents in parallel (Infrastructure, Quality, Multi-Agent, Workflow, Integration) — each read the full codebase independently and predicted 5 steps forward. Results:
+
+1. **Convergence = priority signal.** All 5 converged on the same first action (live judge-gated build loop) despite different mandates. When independent perspectives agree unprompted, that's gravity, not coincidence.
+2. **Diverse lenses catch different things.** The Infrastructure agent caught 17 uncommitted files (urgent data loss risk) that every strategy-focused agent missed. Urgency ≠ importance, and no single lens sees both.
+3. **The best path is a hybrid.** Cherry-pick step 1 from the top 3 paths rather than committing to one. Different paths optimize different axes — combine them.
+4. **Cost is trivial, value is high.** ~300K tokens, 80 seconds wall time, genuine strategic clarity. Cheap for planning.
+
+*Action: Before any major planning decision, run a strategy council: 3-5 subagents with different lenses (at minimum: one tactical/urgent, one strategic/visionary, one user-focused). Look for convergence (what to do) and divergence (what you'd miss with one perspective). Document the result.*
+
+Evidence: 5/5 agents agreed on the same first action. Infrastructure agent uniquely caught data loss risk. Integration agent uniquely proposed adaptive prompt feedback. No single agent would have produced this breadth.
+
+### H15: Simulation ≠ Production — Close the Gap Fast
+**A system tested only in simulation is a prototype, not a product.**
+
+On 2026-02-05, the dual-judge system was built and "verified working" with synthetic test cases — matching spec (9.5 GOLD) and mismatched spec (0.5 INVALID). But all 5 strategy council agents independently flagged the same gap: it has never fired in a real build session. The hook, the token discovery, the LLM response parsing, the build_log integration — all tested individually, never as a connected system under real conditions.
+
+This is H11 (Never Claim Done Until Tested) applied recursively. The quality gate that enforces H11 on other code has not been held to its own standard.
+
+*Action: When you build a system and verify it in simulation, the very next action should be a live end-to-end test under real conditions. Not "sometime later" — next. The longer the gap between simulation and production, the more false confidence accumulates.*
+
+Evidence: 5/5 strategy agents independently flagged this as the top priority. Multiple bugs in the dual-judge system (LLM preamble text, process substitution, auth tokens) were only found during semi-real testing, not by reading the code.
 
 ### H12: Checkpoint After Every Milestone (was H11)
 **Update BOTH daily memory AND MEMORY.md after every major milestone. Not just one.**

@@ -95,41 +95,81 @@ def parse_cursor(since):
     # Legacy: just a timestamp string
     return (int(float(since)), '')
 
-def get_channel_messages(channel_id, since=None, limit=100):
+def get_channel_messages(channel_id, since=None, after_seq=None, limit=100):
     """Fetch messages with deterministic cursor semantics.
     
     Args:
         channel_id: Channel to fetch from
-        since: Compound cursor 'ts:id' (exclusive) or legacy timestamp
+        since: Legacy compound cursor 'ts:id' (exclusive) - backwards compat
+        after_seq: Preferred monotonic seq cursor (exclusive)
         limit: Max messages to return
     
     Returns:
-        dict with 'messages' list and 'next_since' cursor for pagination
+        dict with 'messages' list, 'next_seq' cursor, and legacy 'next_since'
     """
-    since_ts, since_id = parse_cursor(since)
-    
     conn = get_db()
     cursor = conn.cursor()
-    # Compound cursor comparison: (created_at, id) > (since_ts, since_id)
-    # SQLite tuple comparison works lexicographically
-    cursor.execute("""
-        SELECT m.*, a.name as sender_name 
-        FROM messages_v2 m
-        JOIN agents a ON m.sender_id = a.id
-        WHERE m.channel_id = ? AND (m.created_at, m.id) > (?, ?)
-        ORDER BY m.created_at ASC, m.id ASC
-        LIMIT ?
-    """, (channel_id, since_ts, since_id, limit))
-    messages = [dict_from_row(r) for r in cursor.fetchall()]
+    
+    if after_seq is not None:
+        # Preferred: seq-based cursor (monotonic, gap-free)
+        cursor.execute("""
+            SELECT m.*, a.name as sender_name 
+            FROM messages_v2 m
+            JOIN agents a ON m.sender_id = a.id
+            WHERE m.channel_id = ? AND m.seq > ?
+            ORDER BY m.seq ASC
+            LIMIT ?
+        """, (channel_id, after_seq, limit))
+        messages = [dict_from_row(r) for r in cursor.fetchall()]
+    elif since:
+        # Legacy: timestamp-based cursor with id tie-break
+        since_ts, since_id = parse_cursor(since)
+        if since_ts == 0 and since_id == '':
+            # Initial load
+            cursor.execute("""
+                SELECT m.*, a.name as sender_name 
+                FROM messages_v2 m
+                JOIN agents a ON m.sender_id = a.id
+                WHERE m.channel_id = ?
+                ORDER BY m.seq DESC
+                LIMIT ?
+            """, (channel_id, limit))
+            messages = [dict_from_row(r) for r in cursor.fetchall()]
+            messages.reverse()
+        else:
+            cursor.execute("""
+                SELECT m.*, a.name as sender_name 
+                FROM messages_v2 m
+                JOIN agents a ON m.sender_id = a.id
+                WHERE m.channel_id = ? AND (m.created_at, m.id) > (?, ?)
+                ORDER BY m.seq ASC
+                LIMIT ?
+            """, (channel_id, since_ts, since_id, limit))
+            messages = [dict_from_row(r) for r in cursor.fetchall()]
+    else:
+        # No cursor: initial load, get newest then reverse
+        cursor.execute("""
+            SELECT m.*, a.name as sender_name 
+            FROM messages_v2 m
+            JOIN agents a ON m.sender_id = a.id
+            WHERE m.channel_id = ?
+            ORDER BY m.seq DESC
+            LIMIT ?
+        """, (channel_id, limit))
+        messages = [dict_from_row(r) for r in cursor.fetchall()]
+        messages.reverse()
+    
     conn.close()
     
-    # Compute next_since cursor from last message
+    # Compute cursors from last message
+    next_seq = None
     next_since = None
     if messages:
         last = messages[-1]
+        next_seq = last.get('seq')
         next_since = f"{last['created_at']}:{last['id']}"
     
-    return {'messages': messages, 'next_since': next_since}
+    return {'messages': messages, 'next_seq': next_seq, 'next_since': next_since}
 
 def post_channel_message(channel_id, sender_id, content, thread_id=None):
     created_at = int(time.time())
@@ -154,6 +194,9 @@ def post_channel_message(channel_id, sender_id, content, thread_id=None):
     """, (msg_id, channel_id, sender_id, content, thread_id, created_at))
     conn.commit()
     
+    # Get the auto-generated seq
+    seq = cursor.lastrowid
+    
     # Get sender name
     cursor.execute("SELECT name FROM agents WHERE id = ?", (sender_id,))
     sender = cursor.fetchone()
@@ -161,6 +204,7 @@ def post_channel_message(channel_id, sender_id, content, thread_id=None):
     conn.close()
     
     message = {
+        'seq': seq,
         'id': msg_id,
         'channel_id': channel_id,
         'sender_id': sender_id,
@@ -205,7 +249,7 @@ def process_mentions(content, msg_id, sender_id):
             cursor.execute("""
                 INSERT INTO notifications (id, agent_id, type, source_type, source_id, content, created_at)
                 VALUES (?, ?, 'mention', 'message', ?, ?, ?)
-            """, (notif_id, agent['id'], msg_id, f"You were mentioned: {content[:100]}", int(time.time())))
+            """, (notif_id, agent['id'], msg_id, f"You were mentioned: {content}", int(time.time())))
     
     conn.commit()
     conn.close()
@@ -673,9 +717,11 @@ class AgentChatHandler(BaseHTTPRequestHandler):
         
         if path.startswith('/api/v2/channels/') and '/messages' in path:
             channel_id = path.split('/')[4]
-            since = params.get('since', [None])[0]  # Compound cursor or None
+            since = params.get('since', [None])[0]  # Legacy compound cursor
+            after_seq_raw = params.get('after_seq', [None])[0]  # Preferred: monotonic seq
+            after_seq = int(after_seq_raw) if after_seq_raw else None
             limit = int(params.get('limit', [100])[0])
-            return self.send_json(get_channel_messages(channel_id, since, limit))
+            return self.send_json(get_channel_messages(channel_id, since, after_seq, limit))
         
         # Create channel
         if path == '/api/v2/channels':

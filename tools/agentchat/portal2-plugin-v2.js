@@ -217,6 +217,24 @@ async function postToChannel(channelId, content) {
 }
 
 /**
+ * Set typing status via heartbeat endpoint
+ */
+async function setTypingStatus(isTyping) {
+  try {
+    await fetch(`${_serverUrl}/api/v2/agents/${_agentId}/heartbeat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        status: isTyping ? "typing" : "online",
+        status_message: isTyping ? "Thinking..." : "Ready"
+      })
+    });
+  } catch (e) {
+    // Ignore heartbeat failures
+  }
+}
+
+/**
  * Process a message from a channel
  */
 async function processMessage(msg, channelId) {
@@ -237,6 +255,9 @@ async function processMessage(msg, channelId) {
 
   _log?.info(`[AC-V2] Processing message from ${msg.sender_id} in #${channelId}: ${msg.content?.slice(0, 50)}...`);
 
+  // Show typing indicator
+  await setTypingStatus(true);
+
   // Create session key for this channel
   const sessionKey = `agent:main:agentchat:${channelId}`;
   
@@ -251,6 +272,9 @@ async function processMessage(msg, channelId) {
     }
   } catch (e) {
     _log?.error(`[AC-V2] Failed to process message: ${e.message}`);
+  } finally {
+    // Clear typing indicator
+    await setTypingStatus(false);
   }
 }
 

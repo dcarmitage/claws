@@ -160,6 +160,37 @@ This document is the **seed of a living learning system** — a compressed, toke
 
 *Things we've learned that work. Updated as we discover more.*
 
+### Strategy Council (Planning Pattern)
+
+**Discovered 2026-02-05 — validated immediately.**
+
+When deciding what to build next, spawn 3-5 subagents with different strategic lenses and compare their predictions. Each reads the full codebase independently from fresh context.
+
+#### How To Run
+
+1. Pick 3-5 lenses (e.g., Infrastructure, Quality, Multi-Agent, Workflow, Integration)
+2. Spawn each as a parallel subagent with full codebase access
+3. Each predicts 5 steps forward through their lens
+4. Collect results, score on: Alignment, Feasibility, Impact, Momentum, Risk
+5. Look for **convergence** (what to do first) and **divergence** (what a single perspective misses)
+
+#### What We Learned
+
+| Finding | Evidence |
+|---------|----------|
+| Convergence = strongest priority signal | 5/5 agents agreed: run a live judge-gated build loop first |
+| Diverse lenses catch different things | Infrastructure caught 17 uncommitted files that 4 strategy agents missed |
+| Best path = cherry-pick step 1 from top 3 | No single path was optimal; hybrid of Integration + Quality + Infrastructure wins |
+| Cost is trivial | ~300K tokens, 80s wall time for genuine strategic clarity |
+| The pattern generalizes | Same as Council of Judges (L2) but applied to planning instead of code quality |
+
+#### When To Use
+
+- Before any major build or project pivot
+- When multiple valid approaches exist and you're not sure which to pursue
+- When you suspect tunnel vision (too focused on one axis)
+- **Not** for simple tactical decisions — overkill for "which file to edit"
+
 ### Development Process: Portal1 Build Method
 
 **Evolved from experience + Ralph Loops methodology (2026-02-01)**

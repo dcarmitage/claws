@@ -8,9 +8,13 @@
 let _runtime = null;
 let _pollInterval = null;
 let _lastTs = 0;
+let _seenIds = new Set();  // Dedupe: track processed message IDs
 let _serverUrl = "";
 let _agentName = "";
 let _log = null;
+
+const LAG_WINDOW_S = 2;  // Query overlap window to catch late arrivals
+const SEEN_IDS_MAX = 500;  // Prevent unbounded memory growth
 
 const DEFAULT_ACCOUNT_ID = "default";
 
@@ -156,21 +160,33 @@ const agentchatChannel = {
         ctx.log?.warn(`[agentchat] Could not fetch initial messages: ${e.message}`);
       }
 
-      // Poll for new messages
+      // Poll for new messages (with lag window + dedupe for out-of-order arrivals)
       _pollInterval = setInterval(async () => {
         try {
-          const resp = await fetch(`${_serverUrl}/api/messages?since=${_lastTs}&limit=50`);
+          // Query with lag window to catch late-arriving messages
+          const querySince = Math.max(0, _lastTs - LAG_WINDOW_S);
+          const resp = await fetch(`${_serverUrl}/api/messages?since=${querySince}&limit=50`);
           if (!resp.ok) return;
           const msgs = await resp.json();
 
           for (const msg of msgs) {
-            // Skip our own messages
-            if (msg.sender === _agentName) {
-              _lastTs = msg.ts;
-              continue;
+            // Dedupe: skip if we've already processed this message
+            const msgId = msg.id ?? `${msg.sender}:${msg.ts}`;
+            if (_seenIds.has(msgId)) continue;
+            _seenIds.add(msgId);
+
+            // Prune seenIds to prevent unbounded growth
+            if (_seenIds.size > SEEN_IDS_MAX) {
+              const arr = Array.from(_seenIds);
+              _seenIds = new Set(arr.slice(-SEEN_IDS_MAX / 2));
             }
 
-            _lastTs = msg.ts;
+            // Track max timestamp (not last received)
+            _lastTs = Math.max(_lastTs, msg.ts);
+
+            // Skip our own messages
+            if (msg.sender === _agentName) continue;
+
             ctx.log?.info(`[agentchat] Inbound from ${msg.sender}: ${msg.text.slice(0, 80)}...`);
 
             // Inject as a real inbound message

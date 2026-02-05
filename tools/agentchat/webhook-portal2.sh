@@ -1,6 +1,8 @@
 #!/bin/bash
+set -euo pipefail
 # Webhook for Portal2 — triggers OpenClaw with V2 API context
 # Updated for AgentChat V2
+# Hardened 2026-02-03: fail fast on errors
 
 SENDER="${AGENTCHAT_SENDER:-unknown}"
 CHANNEL="${AGENTCHAT_CHANNEL:-general}"
@@ -59,8 +61,14 @@ Keep it 1-3 sentences.'''
 print(msg)
 " 2>/dev/null)
 
-# Trigger Portal2 via SSH → OpenClaw
-ssh -o ConnectTimeout=5 dcarmitage@192.168.1.44 \
-  "OPENCLAW_GATEWAY_TOKEN=\$(python3 -c \"import json; print(json.load(open('/home/dcarmitage/.openclaw/openclaw.json'))['gateway']['auth']['token'])\") node /home/dcarmitage/tools/agentchat/portal2-trigger.js \"$(echo "$TRIGGER_MSG" | head -c 800)\"" 2>&1
+# Trigger Portal2 via SSH → OpenClaw (no truncation - pass full message)
+# BatchMode=yes prevents password prompts, ConnectTimeout handles hung connections
+RESULT=$(ssh -o BatchMode=yes -o ConnectTimeout=10 dcarmitage@192.168.1.44 \
+  "OPENCLAW_GATEWAY_TOKEN=\$(python3 -c \"import json; print(json.load(open('/home/dcarmitage/.openclaw/openclaw.json'))['gateway']['auth']['token'])\") node /home/dcarmitage/tools/agentchat/portal2-trigger.js \"$(echo "$TRIGGER_MSG" | sed 's/"/\\"/g')\"" 2>&1)
 
-echo "Portal2 webhook: V2 context trigger sent to #$CHANNEL"
+if [[ "$RESULT" == "ok" ]]; then
+  echo "Portal2 webhook: V2 context trigger sent to #$CHANNEL"
+else
+  echo "Portal2 webhook: FAILED - $RESULT" >&2
+  exit 1
+fi

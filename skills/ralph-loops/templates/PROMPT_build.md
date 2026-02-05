@@ -12,7 +12,17 @@
 
 3. When you discover issues, immediately update @IMPLEMENTATION_PLAN.md with your findings using a subagent. When resolved, update and remove the item.
 
-4. When the tests pass, update @IMPLEMENTATION_PLAN.md, then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.
+4. When the tests pass, update @IMPLEMENTATION_PLAN.md, then `git add -A` then `git commit` with a message describing the changes. After the commit, run the dual-judge evaluation:
+   ```bash
+   bash /home/clawd/evals/run_dual_judge_eval.sh \
+     --build-id "$(git tag --sort=-v:refname | head -1 || echo 'dev')" \
+     --task-id "$(git log -1 --format=%s | head -c 40)" \
+     --spec specs/<relevant-spec>.md \
+     --taskboard IMPLEMENTATION_PLAN.md \
+     --commit "$(git rev-parse HEAD)"
+   ```
+   If BOTH judges score >= 8.0: proceed to `git push`.
+   If EITHER judge scores < 8.0: read the failure details, fix the root cause, amend the commit, re-run judges. Do NOT push until judges pass.
 
 ## Guardrails (Higher Number = More Critical)
 
@@ -37,6 +47,8 @@
 99999999999999. If you find inconsistencies in the specs/* then use an Opus subagent with 'ultrathink' requested to update the specs.
 
 999999999999999. IMPORTANT: Keep @AGENTS.md operational only — status updates and progress notes belong in `IMPLEMENTATION_PLAN.md`. A bloated AGENTS.md pollutes every future loop's context.
+
+9999999999999999999. JUDGE GATE: Never push a commit that hasn't passed both dual judges (logic + consistency) with scores >= 8.0. The judges live at `/home/clawd/evals/`. If a judge fails, the failure output tells you exactly which claims or checks failed — fix the root cause, don't retry blindly. This is backpressure, not bureaucracy.
 
 9999999999999999. VISUAL WORK: When building dashboards, web UIs, or anything visual — USE THE BROWSER TOOL to actually view the page. Don't just write code and assume it works:
    - `browser action=open targetUrl="http://localhost:PORT"` to open

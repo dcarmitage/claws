@@ -35,6 +35,7 @@ def parse_build(events):
     build_id = None
     tasks = {}  # task_id -> dict
     task_order = []
+    judge_evals = {}  # task_id -> judge_eval event
 
     for ev in events:
         e = ev.get("event")
@@ -58,13 +59,17 @@ def parse_build(events):
             tasks[tid]["duration"] = ev.get("duration_s", 0)
             tasks[tid]["commit"] = ev.get("commit", "")
             tasks[tid]["done"] = True
+        elif e == "judge_eval":
+            tid = ev.get("task_id")
+            judge_evals[tid] = ev
 
     ordered_tasks = []
     for tid in task_order:
         t = tasks[tid]
+        t["task_id"] = tid
         ordered_tasks.append(t)
 
-    return {"build_id": build_id, "date": build_date, "tasks": ordered_tasks}
+    return {"build_id": build_id, "date": build_date, "tasks": ordered_tasks, "judge_evals": judge_evals}
 
 
 def cmd_report(args):
@@ -99,6 +104,21 @@ def cmd_report(args):
         result = "✅" if t.get("passed") else ("❌" if t.get("done") else "⏳")
         commit = t.get("commit", "—") or "—"
         print(f"| {i} | {t['name']} | {dur} | {result} | {commit} |")
+
+    # Judge evaluations table
+    judge_evals = build.get("judge_evals", {})
+    if judge_evals:
+        print()
+        print("## Judge Evaluations")
+        print("| Task | Logic | Consistency | Result |")
+        print("|------|-------|-------------|--------|")
+        for tid, ev in judge_evals.items():
+            lj = ev.get("logic_judge", {})
+            cj = ev.get("consistency_judge", {})
+            l_str = f"{lj.get('score', 0)} ({lj.get('tier', '?')})"
+            c_str = f"{cj.get('score', 0)} ({cj.get('tier', '?')})"
+            result = "\u2705" if ev.get("overall_passed") else "\u274c"
+            print(f"| {tid} | {l_str} | {c_str} | {result} |")
 
 
 def cmd_history(args):
@@ -138,6 +158,10 @@ def cmd_metrics(args):
     all_durations = []
     total_passed = 0
     total_tasks = 0
+    logic_scores = []
+    consistency_scores = []
+    judge_passed = 0
+    judge_total = 0
 
     for f in files:
         build = parse_build(read_log(f))
@@ -147,6 +171,14 @@ def cmd_metrics(args):
                 all_durations.append(t.get("duration", 0))
                 if t.get("passed"):
                     total_passed += 1
+        for tid, ev in build.get("judge_evals", {}).items():
+            judge_total += 1
+            lj = ev.get("logic_judge", {})
+            cj = ev.get("consistency_judge", {})
+            logic_scores.append(lj.get("score", 0))
+            consistency_scores.append(cj.get("score", 0))
+            if ev.get("overall_passed"):
+                judge_passed += 1
 
     total_done = len(all_durations)
     pass_rate = (total_passed / total_done * 100) if total_done else 0
@@ -159,6 +191,16 @@ def cmd_metrics(args):
     if all_durations:
         print(f"Fastest task: {fmt_duration(min(all_durations))}")
         print(f"Slowest task: {fmt_duration(max(all_durations))}")
+
+    if judge_total > 0:
+        avg_logic = sum(logic_scores) / len(logic_scores)
+        avg_consistency = sum(consistency_scores) / len(consistency_scores)
+        judge_pass_rate = (judge_passed / judge_total * 100)
+        print()
+        print(f"Judge evaluations: {judge_total}")
+        print(f"Avg logic score: {avg_logic:.1f}")
+        print(f"Avg consistency score: {avg_consistency:.1f}")
+        print(f"Judge pass rate: {judge_pass_rate:.0f}% ({judge_passed}/{judge_total})")
 
 
 def main():

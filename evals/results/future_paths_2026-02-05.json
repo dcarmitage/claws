@@ -1,0 +1,77 @@
+{
+  "experiment": "5-Path Future Prediction",
+  "date": "2026-02-05",
+  "method": "5 independent subagents, each with full codebase access, each with a different strategic lens",
+  "paths": [
+    {
+      "path_name": "Infrastructure",
+      "path_emoji": "🏗️",
+      "thesis": "The Armada has strong local services but lacks the operational scaffolding (monitoring, backups, CI, and the cloud coordination layer) needed to graduate from a fragile two-node hobby cluster into a self-healing multi-agent platform.",
+      "steps": [
+        {"step_number": 1, "title": "Commit the uncommitted and fix git hygiene", "description": "There are 17 modified files and 17 untracked files sitting uncommitted in /home/clawd, including the entire evals/ directory. This is a single disk failure away from losing the dual-judge system. Commit everything, tag it, and set up a cron job that warns when uncommitted changes are older than 24 hours.", "effort": "small", "impact": "high"},
+        {"step_number": 2, "title": "Automated off-device backups via git remote", "description": "The entire system state lives on a single SD card with no remote git origin. Set up a private Git remote and a systemd timer that pushes daily.", "effort": "small", "impact": "high"},
+        {"step_number": 3, "title": "Service watchdog with auto-restart and alerting", "description": "7+ systemd services running but no centralized monitoring. Build a lightweight watchdog service (systemd timer every 60s) that checks health, auto-restarts crashes, and posts alerts to Telegram.", "effort": "medium", "impact": "high"},
+        {"step_number": 4, "title": "Cloudflare Workers project scaffold for Wave 1 TaskBoard DO", "description": "The Armada Stack depends on Durable Objects but there is zero CF Workers code. Scaffold the wrangler project, deploy a hello-world DO, verify WebSocket connectivity from both Pi nodes.", "effort": "medium", "impact": "high"},
+        {"step_number": 5, "title": "Unified service registry and agent bootstrap protocol", "description": "Services are discovered by hardcoded IPs and ports. Build a lightweight service registry JSON endpoint so new agents can auto-discover infrastructure.", "effort": "medium", "impact": "medium"}
+      ],
+      "risk": "Steps 1-3 are low-risk housekeeping. Step 4 introduces a new deployment target. Step 5 risks over-engineering if agent count stays at 2.",
+      "payoff": "System graduates from 'works when Daniel is watching' to 'recovers when Daniel is sleeping.'"
+    },
+    {
+      "path_name": "Quality",
+      "path_emoji": "🔬",
+      "thesis": "The dual-judge system is architecturally sound but operationally untested — the highest-impact work is closing the gap between simulation-verified and production-proven, then building calibration infrastructure that prevents silent quality decay.",
+      "steps": [
+        {"step_number": 1, "title": "Build a self-test suite for the eval system itself", "description": "The evals/ directory has zero test files. Build evals/test.sh with fixture-based tests: known-good and known-bad spec+diff pairs, asserting the full pipeline behaves correctly. This is E2 (Eval the Evals) made concrete.", "effort": "medium", "impact": "high"},
+        {"step_number": 2, "title": "Run the first live end-to-end judge cycle", "description": "Trigger a real build_log.py task-start, do a real task, run task-done, and verify the full chain: hook fires, agent runs judges, scores flow into build_log, build_report renders them. This is the single most important validation.", "effort": "small", "impact": "high"},
+        {"step_number": 3, "title": "Add judge score calibration with golden-set examples", "description": "Build a golden set of 5-8 spec+diff+expected-score-range examples spanning all tiers. Create a calibration script that runs all examples and asserts scores land within expected bands.", "effort": "medium", "impact": "high"},
+        {"step_number": 4, "title": "Enrich judge evidence with actual test output", "description": "The logic judge receives a placeholder instead of real test results. Extend task-done to accept --test-output and feed it through the pipeline.", "effort": "medium", "impact": "medium"},
+        {"step_number": 5, "title": "Build a judge-result ledger with trend tracking", "description": "Judge results are individual JSON files, not tracked. Build a persistent JSONL ledger and add a trend command to build_report.py for longitudinal quality signals.", "effort": "medium", "impact": "medium"}
+      ],
+      "risk": "Over-investing in judge infrastructure before confirming judges work in production. First live cycle may reveal unexpected issues.",
+      "payoff": "Quality system that is itself quality-assured: own test suite, production-proven, calibrated, and trend-tracked."
+    },
+    {
+      "path_name": "Multi-Agent",
+      "path_emoji": "🤖",
+      "thesis": "The biggest leverage is not in building DO infrastructure yet, but in making Portal1 + Portal2 capable of unsupervised task handoff using existing primitives — AgentChat tasks, dual-judge gate, webhook hints — so that Wave 1 DO work can itself be the first real multi-agent build.",
+      "steps": [
+        {"step_number": 1, "title": "Task Claim Protocol on AgentChat V2", "description": "AgentChat has a tasks table but no claim/ready/complete API. Add three endpoints: claim, complete, and ready (returns unclaimed tasks matching capabilities). This is the minimum primitive that turns chatting agents into coordinating workers.", "effort": "small", "impact": "high"},
+        {"step_number": 2, "title": "Implement Webhook Hint + Burst Polling", "description": "The webhook hint spec is fully designed but unimplemented. Wire it up: task creation fires a hint, receiving agent enters burst-poll mode. Cuts dispatch latency from seconds to milliseconds.", "effort": "medium", "impact": "high"},
+        {"step_number": 3, "title": "Cross-Agent Judge Gate for Shared Builds", "description": "Extend dual-judge so Portal1 can dispatch a task to Portal2 via AgentChat, Portal2 executes, and judge evaluation runs against the shared spec regardless of which agent did the work.", "effort": "medium", "impact": "high"},
+        {"step_number": 4, "title": "Orchestrator Loop: onIdle to Dispatch to Verify", "description": "Build the minimum flywheel: idle agent checks ready queue, claims, executes, judges verify, next task dispatches. Wave 3 of Armada plan but on existing AgentChat infrastructure.", "effort": "medium", "impact": "high"},
+        {"step_number": 5, "title": "First Real Multi-Agent Build: DO TaskBoard as Dogfood", "description": "Use the working local orchestrator to build Wave 1 (DO TaskBoard MVP) as a multi-agent project. Dogfood the coordination stack on the project that will eventually replace it.", "effort": "large", "impact": "high"}
+      ],
+      "risk": "Over-engineering the local AgentChat coordination layer when the plan is to replace it with DOs. Portal2 (4GB) may struggle with concurrent task execution + LLM calls.",
+      "payoff": "Portal1 and Portal2 operate as a genuine autonomous team. Tasks flow from spec to completion without human dispatch. The Cloudflare DO TaskBoard MVP exists as a real artifact built by this process."
+    },
+    {
+      "path_name": "Workflow",
+      "path_emoji": "⚡",
+      "thesis": "The biggest daily friction is the gap between Mudpaw's intent and the system's readiness — sessions start slow, context gets lost, and there is no single view of what the Armada is actually doing.",
+      "steps": [
+        {"step_number": 1, "title": "Session Briefing Dashboard (One-Glance Status)", "description": "A single-page web dashboard showing agent status, last session summary, uncommitted changes, stale memory warnings, latest build/judge results. Mudpaw glances at a browser tab instead of waiting 30-60 seconds for file reads.", "effort": "medium", "impact": "high"},
+        {"step_number": 2, "title": "Automatic Session Resume with Context Snapshot", "description": "A /resume skill that generates a compressed context snapshot at session end — what was being worked on, what is blocked, what the next action is. Directly attacks the core frustration of regression between sessions.", "effort": "small", "impact": "high"},
+        {"step_number": 3, "title": "Build Kickoff in One Command (/build)", "description": "A /build skill that wraps DISCUSS-SPEC-TASKBOARD-BUILD into one entry point. Reduces 10 minutes of setup to one sentence from Mudpaw.", "effort": "medium", "impact": "high"},
+        {"step_number": 4, "title": "Cross-Session Build Continuity (CURRENT_BUILD.json)", "description": "A pointer file tracking active build ID, completed tasks, next task. Builds survive session boundaries without manual reconstruction.", "effort": "small", "impact": "high"},
+        {"step_number": 5, "title": "Telegram Quick Actions (/status, /resume, /builds)", "description": "Telegram slash commands that let Mudpaw check system state and kick off work from his phone. Turns the Armada from a sit-down tool into an always-available system.", "effort": "medium", "impact": "medium"}
+      ],
+      "risk": "Over-automating could hide important state. Dashboard must be honest about gaps. Risk of building workflow tooling as a detour from the Armada vision.",
+      "payoff": "Session starts go from 60 seconds of dead air to instant productivity. Regression between sessions is structurally eliminated."
+    },
+    {
+      "path_name": "Integration",
+      "path_emoji": "🔗",
+      "thesis": "The Armada has powerful subsystems built in isolation — judges, loops, messaging, logging, search — but none talk to each other in production; wiring them into closed loops will create the self-sustaining flywheel.",
+      "steps": [
+        {"step_number": 1, "title": "First Live Ralph Loop With Judge Gate", "description": "Run a real Ralph build loop end-to-end with dual-judge active. Pick a small task, run loop.sh build 3, verify the full chain: task-start, work, task-done, hook, judges, score gate, push gate. Validates the entire build flywheel in one shot.", "effort": "small", "impact": "high"},
+        {"step_number": 2, "title": "AgentChat Task Dispatch via Build Log Events", "description": "Connect AgentChat to the build orchestrator so taskboard loading dispatches tasks to agents as AgentChat messages. Add a 'dispatch' subcommand to build_log.py. This is the L0-to-L1 bridge.", "effort": "medium", "impact": "high"},
+        {"step_number": 3, "title": "QMD Auto-Index of Build Logs and Judge Results", "description": "Wire QMD to auto-index build log JSONL, judge results, and daily memory. Makes 'what went wrong last time we built X?' answerable. Build data becomes queryable knowledge.", "effort": "medium", "impact": "medium"},
+        {"step_number": 4, "title": "Judge Score Feedback Into Prompt Selection", "description": "Use judge score trends to automatically adjust PROMPT_build.md guardrails. When logic scores drop, inject precision guardrails. Creates the first adaptive feedback loop — the system responds to quality trends.", "effort": "medium", "impact": "high"},
+        {"step_number": 5, "title": "Portal2 as Independent Judge Runner", "description": "Move judge execution to Portal2 so the builder never judges its own work. Implements the council-of-judges pattern from ARC-AGI research — diverse models eliminate more errors.", "effort": "large", "impact": "high"}
+      ],
+      "risk": "Premature optimization before basic loops work. Step 1 may reveal production bugs that compound in steps 2-5. Portal2 4GB RAM constraints.",
+      "payoff": "The factory runs itself once the belts are connected. Human's role shifts from 'tell the agent what to do next' to 'review scores and approve releases.'"
+    }
+  ]
+}
