@@ -1,0 +1,2 @@
+{"timestamp": "2026-02-05T23:59:03.739612Z", "build_id": "LIVE001", "event": "build_start"}
+{"timestamp": "2026-02-05T23:59:07.045027Z", "build_id": "LIVE001", "event": "task_start", "task_id": "T1", "task_name": "Add tests for validate_output.sh", "spec": "/home/clawd/evals/specs/test_validate_output.md", "taskboard": "/home/clawd/evals/specs/taskboard_validate_tests.md"}
