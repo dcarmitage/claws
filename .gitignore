@@ -1,3 +1,12 @@
 
 # Project repos (have their own git)
 projects/
+
+# Runtime logs
+*.log
+tools/agentchat/server.log
+tools/agentchat/webhook.log
+tools/polylogue-webhook.log
+
+# Database backups
+*.db.backup-*
