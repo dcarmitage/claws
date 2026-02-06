@@ -1,6 +1,20 @@
 # Changelog
 
-## 2026-02-06 — Initial public release
+## 2.0.0a1 — 2026-02-06
+
+### Added
+- `claws` CLI (`pip install claws`)
+- `claws init` — create a new project with one command
+- `claws agent create` — add agents with identity and memory templates
+- `claws run` — execute tasks via any LLM provider (Anthropic, OpenAI, Ollama, etc.)
+- `claws status` — see all agents, tasks, and scores in your terminal
+- `claws agent list` / `claws agent info` — manage agents
+- Event Spine — unified append-only event log (.claws/events.jsonl)
+- Provider abstraction — Anthropic native + OpenAI-compatible for everything else
+- `claws.yaml` — single config file for project, providers, agents, eval settings
+- MIT License (previously proprietary)
+
+## 1.0.0 — 2026-02-06 — Initial public release
 
 ### Added
 - Dual-judge evaluation system (logic + consistency judges)

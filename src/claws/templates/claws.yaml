@@ -1,0 +1,39 @@
+# claws project configuration
+# Docs: https://claws.com/docs/config
+
+project: {project_name}
+version: 2
+
+# LLM providers — configure at least one
+providers:
+  default:
+    type: anthropic
+    model: claude-sonnet-4-5-20250929
+    # api_key_env: ANTHROPIC_API_KEY  # reads from env by default
+
+  # Uncomment to add more providers:
+  # cheap:
+  #   type: ollama
+  #   model: llama3
+  #   base_url: http://localhost:11434/v1
+  #
+  # openai:
+  #   type: openai
+  #   model: gpt-4o
+  #   api_key_env: OPENAI_API_KEY
+  #
+  # custom:
+  #   type: openai-compatible
+  #   model: your-model
+  #   base_url: http://your-endpoint/v1
+  #   api_key_env: CUSTOM_API_KEY
+
+# Agents — add with: claws agent create <name> --role <role>
+agents: {}
+
+# Evaluation settings
+eval:
+  judges:
+    - logic
+    - consistency
+  threshold: 8.0

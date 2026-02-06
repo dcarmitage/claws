@@ -1,0 +1,30 @@
+# claws runtime state
+.claws/
+
+# Agent output (optional — include if you want to track results)
+# agents/*/output/
+
+# Environment
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+
+# Databases
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
