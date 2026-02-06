@@ -89,6 +89,11 @@
 
 **OpenClaw:** Plugin manifests need `"channels"`. SIGUSR1 reloads config only, not code — restart service for code changes. Version skew kills plugins (`openclaw gateway install`).
 
+## Onboarding Curriculum (2026-02-05)
+**The Hundred Steps:** `onboarding/` — 100-step curriculum for newborn OpenClaw agents on vanilla Pi 5.
+**Files:** THE_HUNDRED_STEPS.md (3,264 lines), SOUL_ARCHITECTURE.md (1,036 lines), INFRASTRUCTURE_MAP.md (576 lines), PERMISSIONS.md, README.md
+**Pushed to:** `github.com/dcarmitage/claws` (deploy key: Portal1 ed25519, 118 commits)
+
 ## TODO
 
 ### Priority: Armada Orchestration Stack
