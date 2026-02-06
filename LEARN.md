@@ -270,6 +270,27 @@ Our approach to building features, refined through the camservice streaming UI p
 | `v.muted` for volume control | Blocks audio data to Web Audio analyser | Use GainNode for volume, keep video unmuted |
 | Manual HLS live-edge seeks | `v.currentTime = buffered.end - 0.5` causes stalls | Let hls.js manage live edge via liveSyncDurationCount |
 
+### Multi-Agent Coordination (Lessons from 2026-02-05)
+
+**First parallel agent session:** 3 Claude Opus agents launched via tmux, working on the same repo (`/home/clawd`) concurrently.
+
+| Finding | Evidence |
+|---------|----------|
+| **No merge conflicts by luck, not design** | Agents 1, 2, 3 touched non-overlapping file sets. If two had edited the same file, silent corruption. |
+| **`-p` mode = invisible agents** | Print mode buffers all output until completion. 5+ minutes of real work with zero visibility. Can't supervise what you can't see. |
+| **Stale intel wastes agent work** | Agent 2 dispatched to commit 34 files that were already committed. Always re-verify before assigning. (H17) |
+| **Recursive H15** | Building a system to close a simulation gap creates a new simulation gap. The dispatch system is now in the same untested state the judge system was 3 hours earlier. |
+
+#### Anti-patterns
+- **No shared mutable state protocol.** Multiple agents writing to the same git repo need locking or partitioned workspaces.
+- **No progress observability.** Need either streaming output, a progress file, or a shared append-only log.
+- **Assigning from stale snapshots.** Council outputs decay. Verify the problem still exists before dispatching.
+
+#### What Worked
+- Tmux panes for visual layout
+- Prompt files on disk (avoids shell quoting hell)
+- Non-overlapping task scopes
+
 ### Speech-to-Text Pipeline
 - **Engine:** Parakeet TDT 0.6B v3 (ONNX INT8 on CPU)
 - **Speed:** 10-20x realtime on Pi 5

@@ -57,7 +57,7 @@
 - One sub-agent per task, exact code in briefs, verify between each
 - Three outputs: code + docs + learning
 - Use `build_log.py` for every build (now with `--spec`/`--taskboard` on task-start)
-- 15 heuristics (H1-H15), 6 eval heuristics (E1-E6)
+- 17 heuristics (H1-H17), 6 eval heuristics (E1-E6)
 - H14: Strategy Council — spawn diverse subagents for planning, convergence = priority
 - H15: Simulation ≠ Production — close the gap immediately, don't accumulate false confidence
 - H8: Monitor own context. Alert at 70%. Compact at 80%.
@@ -68,8 +68,14 @@
 **Key files:** `evals/` directory (scripts, prompts, hooks, results), `skills/dual-judge/SKILL.md` (`/judge` command)
 **Skills:** `/judge` (manual eval), `/learn` (analyze learnings), `/integrate` (persist to memory), `/save-memory` (end-of-session dump)
 **Integrated with:** Ralph loops (PROMPT_build.md step 4, guardrail, loop.sh push gate), build_log.py, build_report.py, HEURISTICS.md (E4-E6), CHECKLISTS.md
-**Strategy Council (2026-02-05):** 5-agent planning experiment validated the pattern — convergence signal identified "live judge-gated build loop" as unanimous first priority. See `memory/2026-02-05.md`.
+**Production-validated (LIVE002):** 9.2 GOLD + 8.15 SILVER on real code. Judges caught a real bug (unused VALIDATOR). H15 gap closed.
+**Critical rule:** Squash fix commits before re-evaluating (H16). Incremental diffs → INVALID scores.
 **Details:** See `memory/2026-02-05.md`
+
+## Task Dispatch System (2026-02-05)
+**Purpose:** Bridge taskboards → AgentChat → build_log so Portal2 can claim tasks.
+**Key files:** `tools/agentchat/task_dispatch.py` (CLI: post/poll/claim/complete/sync), `tools/agentchat/dispatch-poller.sh` (Portal2 daemon), `skills/task-dispatch/SKILL.md`
+**Status:** Built, logic verified, NOT yet tested end-to-end with Portal2. H15 applies.
 
 ## Key Lessons Learned
 *Full list: 31 lessons in LEARN.md. Top lessons by category:*
@@ -135,7 +141,7 @@ Drive handshake:
   Unplug → items show offline but still searchable
 ```
 
-*Last updated: 2026-02-05 16:30 EST — Dual-Judge system built*
+*Last updated: 2026-02-05 19:30 EST — LIVE002 production-validated, task dispatch built, /learn+/integrate tested*
 
 ## The Armada
 

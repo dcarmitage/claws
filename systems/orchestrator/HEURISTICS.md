@@ -155,7 +155,7 @@ When you learn something new about building:
 3. If it contradicts an existing heuristic, update it with the new understanding
 4. Always include the concrete evidence (what happened, what we measured)
 
-*Last updated: 2026-02-01 — Portal1 🌀*
+*Last updated: 2026-02-05 — Portal1 🌀*
 
 ### H8: Monitor Your Own Context
 **Quality degrades nonlinearly (H3) — and that applies to YOU, not just sub-agents.**
@@ -232,6 +232,24 @@ Daily memory is a running log (easy to append). MEMORY.md is curated operational
 3. *`git add && git commit`*
 
 *All three. Every time. No exceptions.*
+
+### H16: Squash Before Re-Eval
+**Incremental fix diffs break judge evaluation. Always squash into the original commit before re-running judges.**
+
+On 2026-02-05 (LIVE002), a fix commit changed only ~8 lines. When judges re-evaluated, they couldn't verify the full spec against such a small diff — 12 of 14 claims became UNVERIFIABLE, scores cratered to 2.0 INVALID + 5.8 INVALID. Squashing the fix into the original commit (so judges see the complete implementation) immediately passed: 9.2 GOLD + 8.15 SILVER.
+
+*Action: When a judge fails and you fix the issue, `git rebase -i` to squash the fix into the original commit before re-running judges. Never re-evaluate against an incremental patch.*
+
+Evidence: LIVE002 Run 2 (2.0 INVALID) vs Run 3 (9.2 GOLD) — same code, different diff size.
+
+### H17: Verify Before Assigning
+**Re-check the problem before sending an agent to fix it. Stale intel wastes agent work.**
+
+On 2026-02-05, the strategy council flagged "17 modified + 17 untracked files" as urgent. By the time Agent 2 was dispatched to commit them, they were already committed (`f0b123c`). Agent 2 found only 1 file to commit — the mission was 95% redundant.
+
+*Action: Before assigning an agent to fix a known problem, verify the problem still exists. `git status`, `ls`, or a quick check. Strategy council outputs are snapshots, not live state — they decay within hours.*
+
+Evidence: Agent 2 dispatched for 34 uncommitted files, found 1.
 
 ### H13: End-of-Session Hygiene (was H12)
 **Before wrapping a session, run a cleanup pass.**
