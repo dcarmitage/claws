@@ -1,0 +1,20 @@
+[Unit]
+Description=AgentChat V2 Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=your-user
+Group=your-user
+WorkingDirectory=$CLAWS_HOME/tools/agentchat
+ExecStart=/usr/bin/python3 $CLAWS_HOME/tools/agentchat/server.py
+ExecStop=/bin/kill -SIGINT $MAINPID
+Restart=on-failure
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

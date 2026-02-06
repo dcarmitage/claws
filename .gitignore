@@ -1,0 +1,62 @@
+# Runtime
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+dist/
+*.egg-info/
+
+# Databases
+*.db
+*.db.backup*
+*.sqlite
+
+# Secrets & credentials
+.secrets/
+.ssh/
+.env
+*.key
+*.pem
+
+# Media (store externally)
+media/
+
+# Logs
+*.log
+orchestrator/logs/
+evals/results/
+evals/specs/
+
+# Agent state (private per deployment)
+MEMORY.md
+USER.md
+HEARTBEAT.md
+TASKBOARD.md
+memory/
+
+# Runtime state
+.clawdhub/
+.clawdbot/
+inbox.json
+inbox.txt
+
+# OpenClaw
+.openclaw/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large tool directories
+tools/parakeet-env/
+tools/parakeet/
+tools/qmd/
+
+# Lock files
+package-lock.json

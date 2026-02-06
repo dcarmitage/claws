@@ -1,0 +1,14 @@
+[Unit]
+Description=agent-alpha Camera Service (Picamera2)
+After=network.target
+
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=$CLAWS_HOME/tools
+ExecStart=/usr/bin/python3 $CLAWS_HOME/tools/camservice.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
