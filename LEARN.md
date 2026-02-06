@@ -291,6 +291,27 @@ Our approach to building features, refined through the camservice streaming UI p
 - Prompt files on disk (avoids shell quoting hell)
 - Non-overlapping task scopes
 
+### Cross-Agent Task Dispatch (Proven 2026-02-05)
+
+**The flow:** Portal1 → AgentChat → Portal2 → `openclaw agent` → result
+
+```
+Portal1: task_dispatch.py post <taskboard> --assignee portal2
+         → creates task in AgentChat, assigns to portal2
+
+Portal2: task_dispatch.py poll portal2
+         → sees task in inbox
+         task_dispatch.py claim <task-id> portal2
+         → status: in_progress
+         openclaw agent --session-id <task-id> --message "<instructions>"
+         → Portal2's LLM executes (has bash, file creation tools)
+         task_dispatch.py complete <task-id> portal2
+         → status: done, posts to #builds
+
+Key: dispatch scripts must be ON the target machine (SCP once).
+Key: Portal2 gateway != OpenAI-compatible HTTP. Use `openclaw agent` CLI.
+```
+
 ### Speech-to-Text Pipeline
 - **Engine:** Parakeet TDT 0.6B v3 (ONNX INT8 on CPU)
 - **Speed:** 10-20x realtime on Pi 5

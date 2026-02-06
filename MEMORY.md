@@ -75,7 +75,8 @@
 ## Task Dispatch System (2026-02-05)
 **Purpose:** Bridge taskboards → AgentChat → build_log so Portal2 can claim tasks.
 **Key files:** `tools/agentchat/task_dispatch.py` (CLI: post/poll/claim/complete/sync), `tools/agentchat/dispatch-poller.sh` (Portal2 daemon), `skills/task-dispatch/SKILL.md`
-**Status:** Built, logic verified, NOT yet tested end-to-end with Portal2. H15 applies.
+**Execution:** `ssh portal2 "openclaw agent --session-id <task-id> --message '<instructions>'"` — Portal2's gateway doesn't serve OpenAI-compatible HTTP; use `openclaw agent` CLI.
+**Status:** Tested end-to-end (2026-02-05). Portal1 posted task → Portal2 polled, claimed, executed (health-check.sh, 4/4 checks pass), completed. H15 gap closed.
 
 ## Key Lessons Learned
 *Full list: 31 lessons in LEARN.md. Top lessons by category:*
