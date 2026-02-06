@@ -1,0 +1,163 @@
+{
+  "build_id": "LIVE002",
+  "task_id": "T1",
+  "commit": "0bbb1f5",
+  "timestamp": "2026-02-06T00:08:03Z",
+  "logic_judge": {
+    "judge": "logic",
+    "timestamp": "2026-02-05T22:15:43Z",
+    "score": 9.2,
+    "tier": "GOLD",
+    "claims": [
+      {
+        "id": 1,
+        "text": "CLI interface matches: ./run_single_judge.sh --judge <logic|consistency> --build-id <id> --task-id <id> --spec <path> --taskboard <path> --commit <sha> [--working-dir <path>]",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 36-54 show argument parsing with all required flags: --judge, --build-id, --task-id, --spec, --taskboard, --commit, and optional --working-dir defaulting to /home/clawd"
+      },
+      {
+        "id": 2,
+        "text": "Logic judge path: When --judge logic, runs only the logic judge with spec, diff, and test output",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 102-103: if [[ \"$JUDGE\" == \"logic\" ]]; then JUDGE_JSON=$(bash \"$LOGIC_JUDGE\" --spec \"$SPEC\" --diff \"$DIFF_FILE\" --test-output \"$TEST_OUTPUT\")"
+      },
+      {
+        "id": 3,
+        "text": "Consistency judge path: When --judge consistency, runs only the consistency judge with spec, taskboard, diff, and changed files",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 104-105: else JUDGE_JSON=$(bash \"$CONSISTENCY_JUDGE\" --spec \"$SPEC\" --taskboard \"$TASKBOARD\" --diff \"$DIFF_FILE\" --changed-files \"$CHANGED_FILES\")"
+      },
+      {
+        "id": 4,
+        "text": "Git artifact gathering reuses same pattern as run_dual_judge_eval.sh - gets diff and changed files from commit",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 83-93: git -C WORKING_DIR show COMMIT --format=\"\" for diff, git show --name-only --format=\"\" for changed files, same pattern as dual evaluator"
+      },
+      {
+        "id": 5,
+        "text": "Output is validated through validate_output.sh",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 112-117: echo \"$JUDGE_JSON\" | bash \"$VALIDATOR\" - validates output, with VALIDATOR set to $SCRIPT_DIR/validate_output.sh on line 14"
+      },
+      {
+        "id": 6,
+        "text": "Exit code: 0 if judge score >= 8.0, 1 otherwise",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 120-127 set PASS_THRESHOLD=8.0, use bc -l to compare, Lines 170-178 exit 0 on pass, exit 1 on fail"
+      },
+      {
+        "id": 7,
+        "text": "Summary output: Prints score, tier, and PASS/FAIL to stdout",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 130-137 print summary with Build, Task, Commit, Judge, Score (tier) RESULT, and Threshold"
+      },
+      {
+        "id": 8,
+        "text": "On FAIL, surfaces failure details same as dual evaluator",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 139-162: On FAIL, prints Failure Details section with jq parsing of claims/execution_issues for logic judge or checks for consistency judge"
+      },
+      {
+        "id": 9,
+        "text": "Rejects invalid --judge value with clear error",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 56-66: case statement validates judge is logic|consistency, prints ERROR: Invalid --judge value with the bad value and exits 1 on invalid input"
+      },
+      {
+        "id": 10,
+        "text": "Validates required files exist",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 73-78: Loop checks -f for SPEC and TASKBOARD files, prints ERROR: File not found and exits 1 if missing"
+      },
+      {
+        "id": 11,
+        "text": "Bash only, no new dependencies",
+        "severity": "minor",
+        "verdict": "CONFIRMED",
+        "evidence": "Script uses only bash builtins plus standard tools (git, jq, bc) which are pre-existing dependencies of the eval system"
+      },
+      {
+        "id": 12,
+        "text": "Must live at evals/run_single_judge.sh",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Diff shows +++ b/evals/run_single_judge.sh as the file path"
+      },
+      {
+        "id": 13,
+        "text": "Reuses existing logic_judge.sh and consistency_judge.sh - no duplication of LLM call logic",
+        "severity": "critical",
+        "verdict": "CONFIRMED",
+        "evidence": "Lines 11-13 define paths to existing judge scripts, Lines 102-105 call them via bash $LOGIC_JUDGE and $CONSISTENCY_JUDGE - no LLM calls in this script"
+      },
+      {
+        "id": 14,
+        "text": "Does NOT log to build_log.py",
+        "severity": "minor",
+        "verdict": "CONFIRMED",
+        "evidence": "Script contains no references to build_log.py, python3, or any logging calls - only outputs to stdout/stderr"
+      }
+    ],
+    "execution_issues": [
+      "Minor: Lines 131-137 print summary to stdout but earlier lines 80-117 print status to stderr, mixing output channels which is fine but inconsistent with 'Prints JSON result and summary line' claim - both go to different streams"
+    ],
+    "summary": "All 14 acceptance criteria are fully implemented. The script correctly wraps existing judges, validates inputs, gathers git artifacts, and produces appropriate output with pass/fail exit codes. Minor observation about mixed stdout/stderr usage does not affect functionality."
+  },
+  "consistency_judge": {
+    "judge": "consistency",
+    "timestamp": "2026-02-06T00:12:34Z",
+    "score": 8.15,
+    "tier": "SILVER",
+    "checks": {
+      "spec_code": {
+        "score": 10.0,
+        "issues": [],
+        "verdict": "aligned"
+      },
+      "spec_tests": {
+        "score": 6.0,
+        "issues": [
+          "No automated test files for the new script",
+          "Taskboard acceptance criteria are manual checks only",
+          "Spec did not explicitly require tests, but lack of automated verification is a gap"
+        ],
+        "verdict": "partial"
+      },
+      "code_tests": {
+        "score": 7.0,
+        "issues": [
+          "No new test code to evaluate against implementation",
+          "Internal use of validate_output.sh provides some validation coverage"
+        ],
+        "verdict": "partial"
+      },
+      "taskboard_commit": {
+        "score": 8.0,
+        "issues": [
+          "Taskboard states 'Single new file' but commit adds 3 files",
+          "Extra files are spec/taskboard docs (not code), which is good practice but exceeds stated scope"
+        ],
+        "verdict": "partial"
+      },
+      "cross_file": {
+        "score": 9.0,
+        "issues": [
+          "Judge script interfaces (--spec, --diff, etc.) assumed consistent with existing scripts but not verified in diff"
+        ],
+        "verdict": "aligned"
+      }
+    },
+    "summary": "Strong spec-to-code alignment with all 8 acceptance criteria implemented correctly. Minor gaps in test coverage (no automated tests) and slight taskboard scope deviation (added documentation files). Overall solid implementation."
+  },
+  "overall_passed": true
+}
