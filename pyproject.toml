@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "Daniel Armitage" },
 ]
-keywords = ["ai", "agents", "multi-agent", "orchestration", "evaluation"]
+keywords = ["ai", "agents", "multi-agent", "orchestration", "evaluation", "onboarding", "curriculum"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -39,9 +39,10 @@ dev = [
 claws = "claws.cli:main"
 
 [project.urls]
-Homepage = "https://claws.com"
+Homepage = "https://github.com/dcarmitage/claws"
 Repository = "https://github.com/dcarmitage/claws"
-Documentation = "https://claws.com/docs"
+Documentation = "https://github.com/dcarmitage/claws#readme"
+Changelog = "https://github.com/dcarmitage/claws/blob/prod/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/claws"]

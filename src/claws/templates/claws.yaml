@@ -1,5 +1,5 @@
 # claws project configuration
-# Docs: https://claws.com/docs/config
+# Docs: https://github.com/dcarmitage/claws#configuration
 
 project: {project_name}
 version: 2
@@ -37,3 +37,8 @@ eval:
     - logic
     - consistency
   threshold: 8.0
+
+# Onboarding — train new agents through a curriculum
+# onboarding:
+#   default_curriculum: default
+#   auto_onboard: false

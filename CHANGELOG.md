@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.0.0a3 — 2026-02-07
+
+### Added
+- `claws agent onboard` — curriculum-based agent training with progressive phases
+- `claws agent create --onboard` — create and immediately onboard in one command
+- `claws curriculum list` / `show` / `create` — manage training curricula
+- Onboarding engine with personality traits, reflection triggers, and phase gates
+- Default curriculum: 3 phases (foundation, domain, capstone), 8 tasks
+- 6 scenario pools for diverse, substantive training content
+- Curriculum inheritance (`extends:` field) for custom curricula
+- Deterministic personality with `--seed` flag (405+ trait combinations)
+- `--resume` flag for crash recovery during onboarding
+- Shared evaluation module (`claws.evaluation`) for programmatic eval access
+- 133 new tests (283 total)
+
+## 2.0.0a2 — 2026-02-06
+
+### Added
+- `claws evaluate` — dual-judge evaluation (logic + consistency judges)
+- Trust profiles — per-agent scoring with trend detection (improving/stable/declining)
+- Trust display in `agent info`, `agent list`, `status`
+- 150 pytest tests across 9 test files
+
 ## 2.0.0a1 — 2026-02-06
 
 ### Added
@@ -12,20 +35,4 @@
 - Event Spine — unified append-only event log (.claws/events.jsonl)
 - Provider abstraction — Anthropic native + OpenAI-compatible for everything else
 - `claws.yaml` — single config file for project, providers, agents, eval settings
-- MIT License (previously proprietary)
-
-## 1.0.0 — 2026-02-06 — Initial public release
-
-### Added
-- Dual-judge evaluation system (logic + consistency judges)
-- Build orchestrator (JSONL logging, reporting, taskboard parser)
-- AgentChat V2 (HTTP + WebSocket inter-agent messaging)
-- 10 OpenClaw/Claude Code skills (judge, learn, integrate, save-memory, task-dispatch, ralph-loops, camsnap, parakeet-stt, video-subtitles, polylogue)
-- The Hundred Steps onboarding curriculum (100-step agent development program)
-- Soul Architecture document (philosophy, CV framework, identity formation)
-- Infrastructure map and permissions checklist
-- Agent starter kit (identity, memory, learning templates)
-- 17 operational heuristics (H1-H17) with evidence
-- 6 eval heuristics (E1-E6)
-- Camera service, media catalog, health checks
-- Example configurations and hook scripts
+- MIT License

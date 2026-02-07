@@ -2,36 +2,61 @@
 
 ## Overview
 
-This is a multi-agent system for running persistent AI agents on edge hardware (Raspberry Pi). The codebase includes evaluation tools, build orchestration, inter-agent messaging, and an onboarding curriculum.
+claws is a CLI tool for running persistent AI agents. Agents have identity, memory, and trust scores. The codebase is a Python package (`pip install claws`) built with Click, Rich, and httpx.
 
 ## File structure
 
 ```
 claws/
-├── evals/           # Dual-judge evaluation (logic + consistency judges)
-├── orchestrator/    # Build logging, reporting, taskboard parsing
-├── skills/          # OpenClaw/Claude Code skills (reusable capabilities)
-├── tools/           # Standalone services (AgentChat, camera, catalog)
-├── onboarding/      # The Hundred Steps curriculum
-├── starter-kit/     # Agent bootstrap templates
-├── scripts/         # Utility scripts
-├── docs/            # Architecture, heuristics, principles
-└── examples/        # Example configs
+├── src/claws/              # The CLI package
+│   ├── cli.py              # Main Click group, command registration
+│   ├── config.py           # Config dataclasses (ProjectConfig, ProviderConfig, etc.)
+│   ├── events.py           # Event/EventSpine, 14 event type constants
+│   ├── evaluation.py       # Shared eval: _run_judge, evaluate_response()
+│   ├── trust.py            # TrustProfile computation from eval events
+│   ├── commands/           # CLI subcommands
+│   │   ├── init.py         # claws init
+│   │   ├── agent.py        # claws agent create/list/info/onboard
+│   │   ├── run.py          # claws run
+│   │   ├── status.py       # claws status
+│   │   ├── evaluate.py     # claws evaluate
+│   │   ├── curriculum.py   # claws curriculum list/show/create
+│   │   └── onboard.py      # claws agent onboard
+│   ├── providers/          # LLM provider abstraction
+│   │   ├── base.py         # Provider ABC, Message, Response
+│   │   ├── registry.py     # get_provider() factory
+│   │   ├── anthropic.py    # Native Anthropic provider
+│   │   └── openai_compat.py # OpenAI-compatible (Ollama, OpenRouter, etc.)
+│   ├── onboarding/         # Curriculum-based agent training
+│   │   ├── engine.py       # OnboardingEngine class
+│   │   ├── curriculum_loader.py # YAML parsing + inheritance
+│   │   ├── personality.py  # Trait selection + formatting
+│   │   └── state.py        # OnboardingState persistence
+│   └── templates/          # Templates for init, agents, curricula
+│       ├── claws.yaml      # Project config template
+│       ├── identity.md     # Agent identity template
+│       ├── memory.md       # Agent memory template
+│       ├── prompts/        # Judge prompt templates
+│       └── curricula/      # Built-in curricula + scenario pools
+├── tests/                  # 283 pytest tests (16 files)
+├── docs/                   # Architecture, contributing, security
+└── pyproject.toml          # Package metadata, dependencies, build config
 ```
 
 ## Code conventions
 
-- **Shell scripts:** `set -euo pipefail` at the top. Use `$SCRIPT_DIR` for relative paths.
-- **Python:** Python 3.11+. No type stubs required but type hints welcome. Use stdlib where possible.
-- **Markdown:** ATX headings (`#`). Tables for structured data. No trailing whitespace.
-- **Paths:** Use `$CLAWS_HOME` for the repo root. Never hardcode `/home/...` paths.
-- **Config:** Use environment variables with sensible defaults: `${VAR:-default}`.
+- **Python:** 3.10+. `from __future__ import annotations`. Type hints welcome.
+- **CLI:** Click for commands, Rich for output. Use `Console()` for printing.
+- **Config:** Dataclasses for config types. YAML for persistence. `claws.yaml` is the single source of truth.
+- **Events:** Use the Event Spine (`EventSpine.emit()`) for all state changes. Never modify events.jsonl directly.
+- **Tests:** pytest with Click's `CliRunner`. Use `tmp_path` fixtures. Mock `httpx` for provider tests.
+- **Markdown:** ATX headings (`#`). Tables for structured data.
 
 ## How to make changes
 
 1. Read the relevant files before modifying. Understand existing patterns.
 2. Keep changes minimal. Don't refactor adjacent code or add features beyond scope.
-3. Test your changes. The evals system (`evals/`) exists for a reason.
+3. Run tests: `source /home/clawd/.venv/bin/activate && python -m pytest tests/ -v`
 4. Follow existing naming conventions in whatever directory you're working in.
 
 ## What NOT to do
@@ -45,20 +70,22 @@ claws/
 ## Testing
 
 ```bash
-# Validate judge output schema
-echo '{"judge":"logic","score":8.5,"tier":"SILVER","timestamp":"2026-01-01T00:00:00Z"}' | bash evals/validate_output.sh -
+source /home/clawd/.venv/bin/activate
 
-# Run a judge against a commit
-bash evals/run_single_judge.sh --judge logic --build-id TEST --task-id T1 \
-  --spec path/to/spec.md --taskboard path/to/taskboard.md --commit HEAD
+# Run all 283 tests
+python -m pytest tests/ -v
 
-# Parse a taskboard
-python3 orchestrator/taskboard.py status path/to/TASKBOARD.md
+# Run a specific test file
+python -m pytest tests/test_onboarding_engine.py -v
+
+# Run tests matching a pattern
+python -m pytest tests/ -k "test_curriculum" -v
 ```
 
 ## Key design decisions
 
-- **Two judges, not one.** Logic judge checks spec compliance. Consistency judge checks cross-file alignment. Neither alone is sufficient.
-- **JSONL for logs.** Append-only, one event per line, easy to parse with jq.
-- **Skills are markdown.** Each skill is a `SKILL.md` with YAML frontmatter. The LLM reads it as instructions.
-- **Memory is distributed.** Daily logs + curated state + heuristics + learning journal. No single file holds everything.
+- **Two judges, not one.** Logic judge checks accuracy and reasoning. Consistency judge checks completeness and coherence. Neither alone is sufficient.
+- **Event Spine.** Append-only JSONL. Every action emits a typed event. Trust profiles are derived, not stored.
+- **Curriculum-based onboarding.** Agents train through progressive phases with gates. Personality traits are sampled, not assigned. Failed tasks trigger reflection before retry.
+- **Provider abstraction.** Anthropic native + OpenAI-compatible for everything else. One interface, any LLM.
+- **File ownership.** When multiple agents work on the codebase, each agent owns specific files. No file appears in two agents' ownership lists.

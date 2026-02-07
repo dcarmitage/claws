@@ -77,7 +77,9 @@ def init(project_name: str, provider: str, model: str | None):
         f"Next steps:\n"
         f"  cd {project_name}\n"
         f"  claws agent create scout --role researcher\n"
-        f"  claws run scout \"your first task\"",
+        f"  claws run scout \"your first task\"\n\n"
+        f"Or create and onboard in one step:\n"
+        f"  claws agent create scout --role researcher --onboard default",
         title="claws",
         border_style="green",
     ))
