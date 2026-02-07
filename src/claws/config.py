@@ -49,6 +49,13 @@ class EvalConfig:
 
 
 @dataclass
+class OnboardingConfig:
+    """Configuration for the onboarding pipeline."""
+    default_curriculum: str = "default"
+    auto_onboard: bool = False
+
+
+@dataclass
 class AgentConfig:
     """Configuration for a single agent."""
     name: str
@@ -65,6 +72,7 @@ class ProjectConfig:
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     agents: dict[str, AgentConfig] = field(default_factory=dict)
     eval: EvalConfig = field(default_factory=EvalConfig)
+    onboarding: OnboardingConfig = field(default_factory=OnboardingConfig)
 
     @property
     def default_provider(self) -> ProviderConfig | None:
@@ -122,10 +130,18 @@ def load_config(project_root: Path | None = None) -> ProjectConfig:
         provider=eval_raw.get("provider"),
     )
 
+    # Parse onboarding
+    onboarding_raw = raw.get("onboarding", {})
+    onboarding_config = OnboardingConfig(
+        default_curriculum=onboarding_raw.get("default_curriculum", "default"),
+        auto_onboard=onboarding_raw.get("auto_onboard", False),
+    )
+
     return ProjectConfig(
         project=raw.get("project", project_root.name),
         version=raw.get("version", 2),
         providers=providers,
         agents=agents,
         eval=eval_config,
+        onboarding=onboarding_config,
     )

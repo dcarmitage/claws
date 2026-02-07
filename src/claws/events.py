@@ -42,6 +42,14 @@ EVAL_COMPLETED = "eval.completed"
 DEPLOY_COMPLETED = "deploy.completed"
 PROJECT_INITIALIZED = "project.initialized"
 
+# Onboarding events
+ONBOARD_STARTED = "onboard.started"
+ONBOARD_PHASE_STARTED = "onboard.phase.started"
+ONBOARD_TASK_COMPLETED = "onboard.task.completed"
+ONBOARD_TASK_FAILED = "onboard.task.failed"
+ONBOARD_PHASE_COMPLETED = "onboard.phase.completed"
+ONBOARD_COMPLETED = "onboard.completed"
+
 
 class EventSpine:
     """Append-only event log backed by a JSONL file."""

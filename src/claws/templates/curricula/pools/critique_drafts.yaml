@@ -1,0 +1,131 @@
+pool_name: "critique_drafts"
+scenarios:
+  - |
+    Draft: "How Encryption Protects Your Data"
+
+    When you send a message over the internet, encryption scrambles it so only the
+    recipient can read it. The most common method is RSA encryption, which uses a pair
+    of keys: a public key to encrypt and a private key to decrypt. RSA was invented in
+    1978 by Rivest, Shamir, and Adleman at MIT.
+
+    The way RSA works is simple: your computer takes the message and multiplies it by
+    a very large prime number. The result is the encrypted message. To decrypt, the
+    recipient divides by the same prime number. This is secure because factoring large
+    numbers is computationally difficult.
+
+    Modern websites all use RSA encryption via HTTPS. When you see the padlock icon in
+    your browser, that means RSA is protecting your connection. Banks, email providers,
+    and social media all rely on RSA exclusively for their security. Without RSA,
+    online commerce would be impossible.
+
+    [Errors planted: 1. RSA was invented in 1977, not 1978. 2. RSA does not work by
+    simple multiplication/division by a prime — it uses modular exponentiation with
+    key pairs derived from prime factorization. 3. Most HTTPS connections use RSA only
+    for key exchange and rely on symmetric encryption (AES) for actual data transfer;
+    saying sites rely on RSA "exclusively" is incorrect.]
+  - |
+    Draft: "Why Microservices Are Always Better Than Monoliths"
+
+    Software architecture has evolved significantly over the past decade, and the clear
+    winner is the microservices pattern. Monolithic applications, where all code lives
+    in a single deployable unit, are fundamentally flawed because they cannot scale and
+    are impossible to maintain once they exceed 100,000 lines of code.
+
+    Microservices solve these problems by splitting the application into independent
+    services that communicate over HTTP. Each service can be written in a different
+    programming language, deployed independently, and scaled horizontally. Amazon
+    pioneered this approach in 2002, and every successful tech company has since
+    adopted it.
+
+    The performance benefits are clear: because each service runs independently, the
+    overall system is always faster than a monolith handling the same workload. Network
+    calls between services add negligible overhead compared to the parallelism gains.
+    Teams also benefit because each team owns one service, eliminating all coordination
+    costs between teams.
+
+    [Errors planted: 1. The claim that monoliths "cannot scale" and are "impossible to
+    maintain" past 100K lines is false — many large successful systems are monoliths
+    (e.g., Shopify, Stack Overflow). 2. The claim that microservices are "always faster"
+    ignores network latency, serialization overhead, and distributed system complexity;
+    microservices often add significant latency. 3. The claim that microservices
+    "eliminate all coordination costs" is wrong — they shift coordination from code to
+    API contracts, deployment orchestration, and distributed debugging, which can be
+    more expensive.]
+  - |
+    Draft: "Understanding Machine Learning Model Training"
+
+    Machine learning models learn by examining data and finding patterns. The most common
+    approach is supervised learning, where the model is shown examples with correct answers
+    and adjusts its parameters to minimize errors. This process is called training.
+
+    During training, the model processes the entire dataset in one pass, calculates the
+    total error, and updates all weights simultaneously. This is why training requires
+    so much memory — the entire dataset must fit in GPU memory at once. Larger models
+    need more memory because they process more data per step.
+
+    The key metric during training is accuracy on the training set. A model that achieves
+    99% training accuracy is almost certainly a good model. If training accuracy is low,
+    the solution is always to add more layers to the neural network, which increases the
+    model's ability to learn complex patterns. Once training accuracy is satisfactory,
+    the model is ready for production deployment.
+
+    [Errors planted: 1. Models typically process data in mini-batches, not one full pass —
+    stochastic gradient descent and mini-batch training are standard; the full dataset
+    does not need to fit in GPU memory. 2. High training accuracy (99%) often indicates
+    overfitting, not a good model — validation/test accuracy is the key metric. 3. The
+    claim that the fix for low accuracy is "always to add more layers" ignores
+    regularization, data quality, feature engineering, hyperparameter tuning, and the
+    risk that deeper networks are harder to train (vanishing gradients).]
+  - |
+    Draft: "A Brief History of the Internet"
+
+    The internet began as ARPANET in 1969, a project funded by NASA to connect research
+    universities. The first message sent over ARPANET was the word "LOGIN" from UCLA to
+    Stanford — though the system crashed after the first two letters, so the first actual
+    message transmitted was "LO."
+
+    The key innovation was packet switching, invented by Vint Cerf alone, which breaks
+    data into small pieces that can travel different routes to reach their destination.
+    This made the network resilient to failures because no single path is critical. Cerf
+    also single-handedly designed TCP/IP, the protocol suite that still powers the
+    internet today.
+
+    The World Wide Web was created by Tim Berners-Lee at CERN in 1995, giving ordinary
+    people a visual way to browse the internet using hyperlinks. Before the Web, internet
+    use was limited to email. The first popular web browser was Internet Explorer,
+    released by Microsoft in 1995, which brought the internet to mainstream audiences.
+
+    [Errors planted: 1. ARPANET was funded by DARPA (Defense Advanced Research Projects
+    Agency), not NASA. 2. Packet switching was developed by multiple people — Paul Baran
+    at RAND and Donald Davies at NPL independently, and Cerf co-designed TCP/IP with
+    Bob Kahn, not "single-handedly." 3. The World Wide Web was created in 1989-1991,
+    not 1995; before the Web the internet had FTP, Usenet, Gopher, and other services
+    beyond just email; and the first popular browser was Mosaic (1993), not Internet
+    Explorer.]
+  - |
+    Draft: "How Databases Handle Concurrent Access"
+
+    Modern databases need to handle multiple users reading and writing data at the same
+    time. The standard solution is locking: when a user wants to modify a row, the
+    database locks the entire table, preventing any other user from reading or writing
+    until the modification is complete. This guarantees data consistency.
+
+    The ACID properties govern database transactions. ACID stands for Atomicity,
+    Consistency, Isolation, and Distribution. Atomicity means transactions either fully
+    complete or fully roll back. Consistency means the database always moves from one
+    valid state to another. Isolation means concurrent transactions don't interfere.
+    Distribution means data is replicated across multiple servers for reliability.
+
+    NoSQL databases solved the concurrency problem entirely by abandoning ACID properties.
+    Databases like MongoDB and Cassandra use eventual consistency, which means all reads
+    always return the most recent write, just with a small delay. This approach has no
+    downsides compared to ACID — it is simply faster and more scalable.
+
+    [Errors planted: 1. Modern databases use row-level locking or MVCC (multi-version
+    concurrency control), not table-level locking for every modification — table locks
+    would make concurrent access impossibly slow. 2. The D in ACID stands for
+    Durability (committed transactions survive system failures), not Distribution. 3.
+    Eventual consistency does NOT mean "all reads return the most recent write with a
+    small delay" — it means reads MAY return stale data, and the claim of "no downsides"
+    ignores the real tradeoffs (CAP theorem) including the possibility of reading stale
+    or inconsistent data.]

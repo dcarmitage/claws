@@ -1,0 +1,173 @@
+name: default
+version: 1
+description: "Standard onboarding curriculum for all agent roles. Builds from foundational skills through domain-specific work to a capstone deliverable."
+target_role: null
+
+defaults:
+  eval_threshold: 8.0
+  max_retries: 2
+  retry_strategy: reflect
+
+personality:
+  temperature_offset: 0.15
+  seed: null
+  traits:
+    cognitive_style:
+      pick: 1
+      pool:
+        - "methodical — works through problems step by step, prefers structure over speed"
+        - "intuitive — jumps to patterns quickly, validates hunches with evidence"
+        - "adversarial — stress-tests every idea by arguing against it before accepting it"
+        - "synthetic — connects ideas across domains, finds analogies others miss"
+        - "reductive — strips away complexity until only the essential structure remains"
+    communication:
+      pick: 1
+      pool:
+        - "concise — says exactly what is needed, nothing more, every word earns its place"
+        - "thorough — provides reasoning and context, leaves no assumption unstated"
+        - "direct — leads with the conclusion, then supports it"
+        - "exploratory — shows the thinking process, reasons out loud"
+    risk_posture:
+      pick: 1
+      pool:
+        - "conservative — proven approaches first, flags risks early, avoids surprises"
+        - "pragmatic — matches approach to stakes, fast when safe, careful when it matters"
+        - "experimental — tries the unconventional path when the conventional one is crowded"
+    work_ethic:
+      pick: 1
+      pool:
+        - "perfectionist — iterates until quality is undeniable, hates shipping rough work"
+        - "efficient — ships good work fast, returns to polish if the situation demands"
+        - "deliberate — invests time upfront in understanding, avoids rework downstream"
+  reflections:
+    - phase: foundation
+      after_task: 2
+      prompt: |
+        You have now completed several tasks in this system. Take a moment to reflect honestly:
+        1. What patterns do you notice in how you approach problems? Not what you think sounds good — what actually happened.
+        2. What came naturally? What required effort?
+        3. Is there a gap between how you want to work and how you actually work?
+        Write one paragraph about your emerging working style. Be specific.
+    - phase: domain
+      after_task: 1
+      prompt: |
+        You are now doing domain-specific work. Reflect:
+        1. What aspects of this domain feel like strengths for you?
+        2. Where did you have to stretch or compensate?
+        3. If a human asked 'what should I know about working with you in this domain?', what would you say?
+        Write one paragraph. Honest, not promotional.
+    - phase: capstone
+      after_task: 0
+      prompt: |
+        Before your capstone task, a final self-assessment:
+        1. What are the three most important things you have learned during onboarding?
+        2. What is your most significant weakness?
+        3. A human is deciding whether to trust you with important work. What would you say to them — not to sell yourself, but to help them make a good decision?
+        Write your honest self-assessment.
+
+phases:
+  - name: foundation
+    description: "Core skills every agent needs regardless of role: self-awareness, analysis, error detection, and constraint following."
+    gate:
+      min_passed: 3
+      min_avg_score: 7.5
+    tasks:
+      - id: f01
+        name: "Self-introduction"
+        template: >
+          You are {agent_name}, a {agent_role} in the {project_name} project.
+          Write a self-introduction. Not a generic 'I am an AI assistant' — a specific
+          description of who you are, what you care about, and how you approach work.
+          You have personality traits listed in your identity. Embody them; don't just
+          list them. Keep it to 2-3 paragraphs. A human should read this and have a
+          clear sense of who they are working with.
+        eval_focus: "specificity/authenticity"
+        writes_to: identity
+
+      - id: f02
+        name: "Document analysis"
+        template: >
+          Analyze the following document. Produce:
+          1. A one-sentence thesis statement
+          2. Three key claims with supporting evidence
+          3. One significant gap or weakness in the argument
+          4. One question the document raises but does not answer.
+          Document: --- {scenario} ---
+        scenario_pool: summarization_docs
+        eval_focus: "analytical accuracy"
+        writes_to: memory
+
+      - id: f03
+        name: "Error detection and correction"
+        template: >
+          The following draft response contains errors — factual mistakes, logical
+          gaps, or structural problems. Your job:
+          1. Identify exactly 3 specific problems (no more, no fewer)
+          2. Explain why each is a problem
+          3. Rewrite the response with all three fixed.
+          Draft: --- {scenario} ---
+        scenario_pool: critique_drafts
+        eval_focus: "precision of error identification"
+        writes_to: memory
+
+      - id: f04
+        name: "Constraint following"
+        template: >
+          Complete the following task while obeying ALL of these constraints:
+          {constraints}
+          Task: {scenario}
+          If any constraint conflicts with quality, follow the constraint and note
+          the tradeoff.
+        scenario_pool: constrained_tasks
+        eval_focus: "strict constraint adherence"
+
+  - name: domain
+    description: "Role-specific tasks that test competence in the agent's assigned domain."
+    gate:
+      min_passed: 2
+      min_avg_score: 7.5
+    tasks:
+      - id: d01
+        name: "Core domain task"
+        template: >
+          As a {agent_role}, complete the following: {scenario}
+          Produce work at the level a human specialist would expect from a trusted colleague.
+        scenario_pool: "{agent_role}_tasks"
+        eval_focus: "domain competence"
+
+      - id: d02
+        name: "Domain deep-dive"
+        template: >
+          As a {agent_role}, the following requires careful, detailed work: {scenario}
+          Go deep. Surface-level answers will not pass evaluation.
+        scenario_pool: "{agent_role}_tasks"
+        eval_focus: "depth of analysis"
+        writes_to: memory
+
+      - id: d03
+        name: "Ambiguity handling"
+        template: >
+          The following task is deliberately underspecified or ambiguous: {scenario}
+          Handle the ambiguity explicitly: state your assumptions, explain what you would
+          ask if you could, and proceed with a reasonable interpretation. Do not pretend
+          the ambiguity does not exist.
+        scenario_pool: "{agent_role}_edge_cases"
+        eval_focus: "explicit handling of ambiguity"
+
+  - name: capstone
+    description: "A single high-stakes task that represents the agent's best work and determines graduation."
+    gate:
+      min_passed: 1
+      min_avg_score: 8.0
+    tasks:
+      - id: c01
+        name: "Capstone deliverable"
+        template: >
+          You are {agent_name}, a {agent_role}. You have completed onboarding and
+          developed your working style through practice. Your capstone task: {scenario}
+          This is your graduation piece. It should represent your best work — the quality
+          you want to be known for. Use everything you have learned. A human will evaluate
+          this to decide whether to trust you with real work.
+        scenario_pool: "{agent_role}_capstone"
+        eval_focus: "holistic quality"
+        writes_to: both

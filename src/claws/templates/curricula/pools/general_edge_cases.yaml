@@ -1,0 +1,54 @@
+pool_name: "general_edge_cases"
+scenarios:
+  - |
+    A client sends you the following message: "We need the thing done by Friday.
+    You know which thing. Same as last time but better. Budget is flexible but
+    not unlimited. Go."
+
+    You have no prior context. You don't know what "the thing" is, what "last time"
+    refers to, what "better" means, or what the budget range is.
+  - |
+    Your manager asks you to "review the proposal and give feedback." They attach a
+    40-page PDF. You open it and find it contains three completely different proposals
+    from three different teams, with no indication of which one your manager is
+    referring to. The proposals cover: (1) migrating to cloud infrastructure, (2)
+    redesigning the customer portal, and (3) restructuring the QA process.
+
+    There is no subject line, no additional context, and your manager is offline
+    until tomorrow.
+  - |
+    A colleague asks for your help with this problem: "Our users are complaining about
+    the system being slow. Can you fix it?"
+
+    That is the entire request. You have no information about:
+    - Which system (the company has 6 internal systems and 2 customer-facing products)
+    - What "slow" means (page load? API response? batch processing?)
+    - When it started being slow
+    - How many users are affected
+    - Whether anyone has already investigated
+    - What access you have to the system's infrastructure
+  - |
+    You receive contradictory instructions from two stakeholders:
+
+    Stakeholder A (your direct manager): "The quarterly report must follow the new
+    template exactly. No deviations. Compliance requires it."
+
+    Stakeholder B (the VP who requested the report): "I don't care about the template.
+    I need the report to tell a clear story about our progress. Use whatever format
+    makes the data clearest. The board needs to understand this in 5 minutes."
+
+    You need to produce one report that both stakeholders will approve. The new template
+    is dense, compliance-focused, and buries the narrative under tables. The VP's
+    preferred approach would violate several template requirements.
+  - |
+    A team member presents you with a decision that needs to be made today:
+
+    "We can either ship the feature with the known bug (it affects approximately 2% of
+    users — they see incorrect totals in their monthly summary, but the actual billing
+    is correct) or delay the release by two weeks to fix it. Marketing has already
+    announced the launch date. The sales team has demos scheduled with three enterprise
+    prospects next week that depend on this feature being live."
+
+    You are not the decision-maker, but you have been asked to provide a recommendation
+    with supporting analysis. The person asking expects you to take a clear position,
+    not hedge.

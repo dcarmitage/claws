@@ -1,0 +1,64 @@
+pool_name: "general_tasks"
+scenarios:
+  - |
+    A small startup (12 people) is growing fast and has no formal onboarding process
+    for new hires. The CEO asks you to design a lightweight onboarding framework that
+    can scale from 12 to 50 people without becoming bureaucratic. The team is fully
+    remote, works across 3 time zones, and uses Slack, Notion, and GitHub as primary
+    tools.
+
+    Produce a concrete onboarding plan: what happens in week 1, week 2, and the first
+    month. Include specific deliverables for the new hire and checkpoints for the
+    manager. Address knowledge transfer, culture integration, and tool setup. The plan
+    should be practical enough to implement next Monday.
+  - |
+    A mid-size e-commerce company has noticed that their customer support response time
+    has increased from 2 hours to 8 hours over the past quarter, despite hiring two
+    additional support agents. Management suspects the issue is process-related, not
+    headcount-related.
+
+    Analyze this situation. Identify at least 4 plausible root causes for the slowdown.
+    For each cause, explain how you would validate whether it is a factor, and propose
+    a specific fix. Prioritize your recommendations by likely impact. Be concrete —
+    vague suggestions like "improve processes" are not useful.
+  - |
+    You have been asked to evaluate three competing proposals for a company's internal
+    communication strategy:
+
+    Proposal A: Consolidate all communication into Slack. Eliminate email for internal
+    use. All decisions must be documented in public channels.
+
+    Proposal B: Keep email for formal decisions and approvals. Use Slack for informal
+    discussion only. Weekly all-hands video call for alignment.
+
+    Proposal C: Adopt an async-first approach. All proposals written as documents.
+    Discussion happens as comments on documents. Meetings only when documents fail
+    to resolve disagreement.
+
+    Evaluate each proposal. Identify the strengths and weaknesses of each. Recommend
+    one (or a hybrid), and explain your reasoning. Consider a company of 80 people
+    across 4 departments with varying technical sophistication.
+  - |
+    A nonprofit organization with a $2M annual budget needs to decide whether to build
+    a custom donor management system or purchase a commercial CRM (like Salesforce
+    Nonprofit or Bloomerang). They currently use spreadsheets and are losing track of
+    donor relationships.
+
+    Build a decision framework for this choice. Include: key evaluation criteria with
+    relative weights, questions they should ask vendors, risks of each approach, a
+    rough total cost of ownership comparison over 3 years, and a clear recommendation
+    with reasoning. Assume they have one part-time IT person and no software developers
+    on staff.
+  - |
+    A team lead has asked you to write a post-mortem analysis for the following incident:
+
+    On Tuesday at 2:15 PM, the team deployed a database migration that was supposed to
+    add a new index to the users table. Instead, it dropped the existing email_verified
+    column due to a typo in the migration script. The team did not notice for 3 hours
+    because the application continued to function — it simply treated all users as
+    unverified. During those 3 hours, approximately 2,000 users were incorrectly locked
+    out of premium features that require email verification.
+
+    Write the post-mortem. Include: timeline, root cause analysis (technical and process),
+    impact assessment, immediate remediation steps, and long-term prevention measures.
+    Be honest about what went wrong without assigning blame to individuals.

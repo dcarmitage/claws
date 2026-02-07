@@ -1,5 +1,6 @@
 """claws agent — manage agents in a project."""
 
+import asyncio
 from pathlib import Path
 
 import click
@@ -24,7 +25,9 @@ def agent():
 @click.argument("name")
 @click.option("--role", required=True, help="Agent role (e.g. researcher, developer, reviewer)")
 @click.option("--provider", default="default", help="LLM provider name from claws.yaml")
-def create(name: str, role: str, provider: str):
+@click.option("--onboard", "onboard_curriculum", default=None, is_flag=False, flag_value="default",
+              help="Onboard agent with curriculum (default: 'default')")
+def create(name: str, role: str, provider: str, onboard_curriculum: str | None):
     """Create a new agent in the current project."""
     project_root = find_project_root()
     if project_root is None:
@@ -68,7 +71,20 @@ def create(name: str, role: str, provider: str):
     console.print(f"  [green]+[/] agents/{name}/memory.md")
     console.print(f"  [green]+[/] agents/{name}/output/")
     console.print()
-    console.print(f"Run: [bold]claws run {name} \"your task here\"[/]")
+
+    if onboard_curriculum:
+        from claws.onboarding.engine import OnboardingEngine
+        console.print(f"Starting onboarding with '{onboard_curriculum}' curriculum...")
+        engine = OnboardingEngine(
+            project_root=project_root,
+            agent_name=name,
+            curriculum_name=onboard_curriculum,
+        )
+        state = asyncio.run(engine.run())
+        if state.status != "completed":
+            raise SystemExit(1)
+    else:
+        console.print(f"Run: [bold]claws run {name} \"your task here\"[/]")
 
 
 @agent.command("list")
@@ -184,3 +200,8 @@ def _add_agent_to_config(project_root: Path, name: str, role: str, provider: str
 
     with open(config_path, "w") as f:
         yaml.dump(raw, f, default_flow_style=False, sort_keys=False)
+
+
+# Register onboard subcommand from its own module
+from claws.commands.onboard import onboard as onboard_cmd  # noqa: E402
+agent.add_command(onboard_cmd, "onboard")

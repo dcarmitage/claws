@@ -15,108 +15,17 @@ from rich.table import Table
 
 from claws.config import find_project_root, load_config
 from claws.events import EventSpine, Event, TASK_COMPLETED, EVAL_STARTED, EVAL_COMPLETED
+from claws.evaluation import (
+    _load_prompt,
+    _parse_output_file,
+    _extract_json,
+    _determine_tier,
+    _tier_color,
+    _run_judge,
+)
 from claws.providers import get_provider, Message
 
 console = Console()
-
-# Path to judge prompt templates relative to this package
-TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "prompts"
-
-
-def _load_prompt(judge_name: str) -> str:
-    """Load a judge prompt template from the templates directory."""
-    prompt_path = TEMPLATES_DIR / f"{judge_name}_judge.txt"
-    if not prompt_path.exists():
-        raise FileNotFoundError(f"Judge prompt not found: {prompt_path}")
-    return prompt_path.read_text()
-
-
-def _parse_output_file(content: str) -> tuple[str, str]:
-    """Parse an agent output file into (task, response).
-
-    Output files have the format:
-        # Task
-
-        <task text>
-
-        # Response
-
-        <response text>
-    """
-    marker = "# Response"
-    if marker not in content:
-        # Fallback: treat entire content as response, no task
-        return "", content
-
-    parts = content.split(marker, 1)
-    task_section = parts[0]
-    response_section = parts[1]
-
-    # Strip the "# Task" header from task section
-    task = task_section.replace("# Task", "", 1).strip()
-    response = response_section.strip()
-
-    return task, response
-
-
-def _extract_json(text: str) -> dict[str, Any]:
-    """Extract JSON from LLM response text.
-
-    LLMs often add preamble or markdown fences around JSON.
-    Find the first { and last } to extract the JSON object.
-    """
-    first_brace = text.find("{")
-    last_brace = text.rfind("}")
-    if first_brace == -1 or last_brace == -1 or last_brace <= first_brace:
-        raise ValueError(f"No valid JSON object found in response")
-    json_str = text[first_brace:last_brace + 1]
-    return json.loads(json_str)
-
-
-def _determine_tier(score: float) -> str:
-    """Determine quality tier from overall score."""
-    if score >= 9.0:
-        return "excellent"
-    elif score >= 7.0:
-        return "good"
-    elif score >= 5.0:
-        return "acceptable"
-    else:
-        return "poor"
-
-
-def _tier_color(tier: str) -> str:
-    """Return a Rich color for the quality tier."""
-    return {
-        "excellent": "green",
-        "good": "blue",
-        "acceptable": "yellow",
-        "poor": "red",
-    }.get(tier, "white")
-
-
-async def _run_judge(provider, judge_name: str, task: str, response: str) -> dict[str, Any] | None:
-    """Run a single judge evaluation and return parsed results."""
-    prompt_template = _load_prompt(judge_name)
-    prompt = prompt_template.replace("{task}", task).replace("{response}", response)
-
-    messages = [
-        Message(role="user", content=prompt),
-    ]
-
-    result = None
-    try:
-        result = await provider.complete(messages, max_tokens=8192)
-        parsed = _extract_json(result.content)
-        return parsed
-    except (ValueError, json.JSONDecodeError) as e:
-        console.print(f"[yellow]Warning:[/] Failed to parse {judge_name} judge response: {e}")
-        if result is not None:
-            console.print(f"[dim]Raw response:[/]\n{result.content[:500]}")
-        return None
-    except Exception as e:
-        console.print(f"[yellow]Warning:[/] {judge_name} judge failed: {e}")
-        return None
 
 
 @click.command()
@@ -204,6 +113,8 @@ def evaluate(agent_name: str, provider_name: str | None, output_path: str | None
         try:
             console.print(f"\n[dim]Running {judge_name} judge...[/]")
             result = asyncio.run(_run_judge(provider, judge_name, task, response))
+            if result is None:
+                console.print(f"[yellow]Warning:[/] Failed to parse {judge_name} judge response")
             results[judge_name] = result
         except FileNotFoundError as e:
             console.print(f"[yellow]Warning:[/] {e}")

@@ -1,0 +1,24 @@
+pool_name: "constrained_tasks"
+scenarios:
+  - constraints: "1. Maximum 200 words. 2. Use only simple sentences (no compound or complex sentences). 3. No jargon or technical terms."
+    scenario: |
+      Explain how public key cryptography works to a non-technical audience.
+      Cover why it matters for everyday internet use.
+  - constraints: "1. Exactly 5 bullet points. 2. Each bullet must be one sentence. 3. No bullet may exceed 20 words. 4. Bullets must be ordered from most to least important."
+    scenario: |
+      Summarize the key risks of deploying a large language model in a customer-facing
+      application without human oversight. Consider both technical and organizational risks.
+  - constraints: "1. Write in second person ('you'). 2. No sentences longer than 15 words. 3. Use an analogy from cooking or food preparation. 4. Total response under 150 words."
+    scenario: |
+      Explain the concept of version control (like Git) to someone who has never programmed.
+      Help them understand why developers consider it essential.
+  - constraints: "1. Response must be structured as exactly 3 paragraphs. 2. Each paragraph must address a different stakeholder (developers, managers, end users). 3. No paragraph may exceed 75 words. 4. Do not use the word 'should'."
+    scenario: |
+      A software team is considering migrating from a REST API to GraphQL for their
+      web application. Write a balanced assessment of this decision for different
+      stakeholders in the organization.
+  - constraints: "1. Use numbered steps only (no prose paragraphs). 2. Exactly 8 steps. 3. Each step must start with a verb. 4. No step may reference a specific tool or product by name. 5. Total response under 300 words."
+    scenario: |
+      Write a guide for conducting a security review of a web application before
+      its public launch. The guide should be useful regardless of the specific
+      technology stack being used.

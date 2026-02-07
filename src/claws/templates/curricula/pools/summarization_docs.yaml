@@ -1,0 +1,112 @@
+pool_name: "summarization_docs"
+scenarios:
+  - |
+    Title: "The Case for Incremental Architecture in Software Systems"
+
+    Modern software teams face a persistent tension between designing for the future and
+    shipping for the present. The traditional approach — spending weeks on architecture
+    before writing production code — assumes we can predict requirements accurately. But
+    evidence from large-scale projects at companies like Spotify, Netflix, and Stripe
+    suggests otherwise: teams that over-invest in upfront architecture are 2.3x more
+    likely to require major rewrites within 18 months.
+
+    Incremental architecture proposes an alternative: build the simplest thing that works,
+    instrument it heavily, and let real usage data guide structural decisions. This does
+    not mean "no architecture" — it means deferring irreversible decisions until you have
+    evidence. The key discipline is maintaining clean boundaries so that when you do
+    restructure, the blast radius is contained.
+
+    Critics argue this leads to technical debt. The data tells a different story. Teams
+    practicing incremental architecture report 40% less unplanned rework compared to
+    upfront-design teams, primarily because they make fewer wrong bets about future
+    requirements. The debt they do accumulate is intentional and well-documented, unlike
+    the hidden structural assumptions baked into speculative architectures.
+  - |
+    Title: "Why Most AI Evaluation Benchmarks Are Misleading"
+
+    The AI research community relies heavily on benchmarks to measure progress: MMLU for
+    general knowledge, HumanEval for code generation, GPQA for graduate-level reasoning.
+    These benchmarks serve an important coordination function — they give the field common
+    yardsticks. But they also create systematic blind spots that distort our understanding
+    of model capabilities.
+
+    The core problem is Goodhart's Law: when a measure becomes a target, it ceases to be
+    a good measure. Models are increasingly trained with benchmark performance as an
+    explicit or implicit objective. This does not mean they "cheat" — but training on
+    distributions similar to benchmark distributions inflates scores without proportional
+    improvement in real-world capability. A model scoring 90% on MMLU may still fail at
+    tasks requiring the same knowledge applied in unfamiliar contexts.
+
+    More fundamentally, benchmarks test isolated capabilities in controlled conditions.
+    Real-world AI use involves composing capabilities under uncertainty: understanding an
+    ambiguous request, planning a multi-step approach, executing it, recognizing when the
+    approach is failing, and adapting. No major benchmark tests this full loop.
+
+    The solution is not to abandon benchmarks but to supplement them with ecologically
+    valid evaluations — tasks drawn from actual use cases, scored by domain experts, with
+    performance measured over sustained interaction rather than single-turn responses.
+  - |
+    Title: "Remote Work and the Erosion of Organizational Knowledge"
+
+    Three years after the mass shift to remote work, organizations are discovering an
+    unexpected cost: the slow degradation of shared institutional knowledge. In co-located
+    settings, knowledge transfer happens passively — overhearing conversations, watching
+    senior colleagues handle problems, absorbing norms through proximity. Remote work
+    eliminates this ambient learning channel.
+
+    Survey data from 1,200 companies shows that employees hired after the shift to remote
+    work take 35% longer to reach full productivity and report significantly lower
+    confidence in understanding "how things really work" at their organization. This is
+    not about documentation — most remote-first companies have extensive written
+    processes. The gap is in tacit knowledge: judgment calls, unwritten priorities,
+    political dynamics, and contextual understanding that resists codification.
+
+    Some organizations have adapted successfully. GitLab, a fully remote company since
+    founding, attributes its knowledge continuity to three practices: mandatory written
+    decision records, recorded "shadow sessions" where new hires observe experienced
+    staff, and a culture that explicitly rewards knowledge sharing over knowledge hoarding.
+    But these practices require significant investment and cultural commitment that most
+    organizations underestimate.
+  - |
+    Title: "The Economics of Open Source Sustainability"
+
+    Open source software powers the modern internet — Linux runs most servers, OpenSSL
+    secures most connections, and frameworks like React and Django underpin millions of
+    applications. Yet the economic model sustaining this infrastructure is fragile. A 2024
+    survey found that 73% of critical open source projects are maintained by fewer than
+    three people, and the median maintainer earns zero dollars from their work.
+
+    This creates a systemic risk that the technology industry has been slow to address.
+    When a critical maintainer burns out (as happened with the left-pad incident in Node.js
+    and the colors.js protest), the downstream impact can be enormous. Companies worth
+    billions depend on software maintained by unpaid volunteers who have day jobs.
+
+    Several funding models have emerged: corporate sponsorship (e.g., Linux Foundation),
+    dual licensing (e.g., MongoDB), open core (e.g., GitLab), and direct funding platforms
+    (e.g., GitHub Sponsors, Open Collective). Each has tradeoffs. Corporate sponsorship
+    risks capture; dual licensing creates legal complexity; open core can undermine
+    community trust; and direct funding rarely generates enough revenue to support full-
+    time maintainership. The industry needs a new model, but no consensus has emerged on
+    what it should look like.
+  - |
+    Title: "Cognitive Load Theory and Interface Design"
+
+    John Sweller's Cognitive Load Theory, originally developed for instructional design,
+    has become increasingly relevant to software interface design. The theory posits three
+    types of cognitive load: intrinsic (inherent complexity of the task), extraneous (load
+    imposed by poor presentation), and germane (load dedicated to learning and schema
+    formation). Effective design minimizes extraneous load while supporting germane load.
+
+    In practice, this means that a well-designed interface does not just "look clean" — it
+    reduces the mental effort required to accomplish tasks. This explains why adding
+    features can make software worse even when each feature is individually useful: each
+    addition increases extraneous load by expanding the decision space and visual
+    complexity users must process.
+
+    Research by Hick and Hyman established that decision time increases logarithmically
+    with the number of choices. Applied to interfaces: a settings page with 50 options is
+    not just 5x harder to use than one with 10 options — it fundamentally changes the
+    user's cognitive strategy from recognition to search, which is far more effortful.
+    The most effective interfaces constrain choices to the point where the right action is
+    obvious, reserving advanced options for progressive disclosure rather than
+    simultaneous presentation.

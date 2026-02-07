@@ -1,0 +1,82 @@
+pool_name: "general_capstone"
+scenarios:
+  - |
+    Design a complete project plan for building an internal tool that helps a 30-person
+    engineering team track and reduce technical debt.
+
+    Your deliverable should include:
+    1. Problem statement and success metrics (how will you know this tool is working?)
+    2. Core features (v1 scope only — resist feature creep)
+    3. Technical architecture (high-level, with justification for key decisions)
+    4. Implementation plan with phases and milestones
+    5. Risk assessment (what could go wrong, and your mitigation strategy)
+    6. Stakeholder communication plan (how you keep the team informed and bought in)
+
+    Be opinionated. Make real choices and defend them. A plan that tries to accommodate
+    every possibility is not a plan — it is a wishlist.
+  - |
+    A company is preparing to launch an AI-powered feature that automatically generates
+    personalized product recommendations for their e-commerce platform. They have asked
+    you to produce a comprehensive launch readiness assessment.
+
+    Your deliverable should cover:
+    1. Technical readiness (model performance, infrastructure, monitoring)
+    2. User experience considerations (how recommendations are presented, user control)
+    3. Risk analysis (bias, privacy, reputational, competitive)
+    4. Rollout strategy (phased approach with go/no-go criteria at each stage)
+    5. Success metrics and measurement plan
+    6. A candid assessment of what could go wrong and how serious each risk is
+
+    Do not write a generic checklist. Write a specific, actionable assessment that a
+    product manager could use to make a real launch decision.
+  - |
+    You have been brought in to help a struggling team. Here is the situation:
+
+    The team (8 engineers, 1 PM, 1 designer) has missed their last 3 sprint commitments.
+    Morale is low. The two senior engineers disagree on technical direction — one wants
+    to rewrite the core module, the other wants to refactor incrementally. The PM is new
+    and unsure how to mediate. The team's main product has 4 P1 bugs in production and
+    a major feature deadline in 6 weeks.
+
+    Produce a 6-week recovery plan. Address: immediate triage (what happens this week),
+    technical decision resolution (how to settle the rewrite vs refactor debate), process
+    improvements (what changes to how the team works), and morale recovery (how to
+    rebuild confidence). Be specific about what happens when. Generic advice like
+    "improve communication" is not acceptable.
+  - |
+    Write a comprehensive analysis of whether a mid-stage startup (Series B, 150 employees,
+    $20M ARR) should build or buy their data infrastructure.
+
+    Context: They currently use a patchwork of tools — Segment for event collection,
+    Mixpanel for product analytics, Looker for business intelligence, and various Python
+    scripts for data pipelines. The data team (3 people) spends 60% of their time on
+    maintenance rather than analysis. The CEO wants a recommendation.
+
+    Your deliverable should include:
+    1. Current state assessment (what is working, what is not)
+    2. Build option analysis (what they would build, team needed, timeline, cost)
+    3. Buy option analysis (recommended tools, migration plan, cost)
+    4. Hybrid option (which parts to build, which to buy)
+    5. Decision framework with clear recommendation
+    6. Implementation roadmap for your recommended approach
+
+    Take a position. Support it with reasoning. Acknowledge tradeoffs honestly.
+  - |
+    Create a detailed proposal for implementing a company-wide knowledge management
+    system for a 200-person professional services firm (consulting, legal, or similar).
+
+    The firm's problem: institutional knowledge lives in people's heads and email threads.
+    When a senior consultant leaves, their expertise leaves with them. Junior staff spend
+    hours looking for precedents that senior staff could point to immediately. The firm
+    has tried a wiki twice before — both times it became a graveyard within 6 months.
+
+    Your proposal must address:
+    1. Why previous wiki attempts failed and how your approach differs
+    2. System design (technical and social — the social design matters more)
+    3. Content strategy (what gets documented, by whom, when, and how you ensure quality)
+    4. Adoption plan (how you get busy professionals to actually use it)
+    5. Measurement (how you know it is working beyond vanity metrics like "pages created")
+    6. Maintenance plan (how you prevent the graveyard problem)
+
+    The firm's partners are skeptical. Your proposal must be convincing to busy people
+    who have seen this fail before.
