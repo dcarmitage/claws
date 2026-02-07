@@ -569,8 +569,9 @@ class OnboardingEngine:
         return False
 
     @staticmethod
-    def _summary_line(text: str, max_len: int = 90) -> str:
-        """Extract the first substantive line from a response for display."""
+    def _summary_line(text: str, max_len: int = 200) -> str:
+        """Extract the first substantive sentence(s) from a response for display."""
+        lines = []
         for line in text.strip().split("\n"):
             stripped = line.strip()
             # Skip headings, blank lines, and very short lines
@@ -579,9 +580,14 @@ class OnboardingEngine:
             # Skip common preamble patterns
             if stripped.lower().startswith(("here is", "here's", "sure,", "certainly")):
                 continue
-            if len(stripped) > max_len:
-                return stripped[:max_len - 3] + "..."
-            return stripped
+            lines.append(stripped)
+            if len(" ".join(lines)) >= max_len:
+                break
+        if lines:
+            combined = " ".join(lines)
+            if len(combined) > max_len:
+                return combined[:max_len - 3] + "..."
+            return combined
         # Fallback: first N chars of the whole text
         flat = text.strip().replace("\n", " ")[:max_len]
         return flat + "..." if len(text.strip()) > max_len else flat
@@ -606,12 +612,20 @@ class OnboardingEngine:
 
         return system_prompt
 
+    # Fallback mapping: role-specific pool suffix → general pool name
+    _GENERAL_FALLBACKS = {
+        "_tasks": "general_tasks",
+        "_edge_cases": "general_edge_cases",
+        "_capstone": "general_capstone",
+    }
+
     def _load_scenario_pool(
         self, pool_name: str, seed: int | None, attempt: int
     ) -> str | dict:
         """Load and sample from a scenario pool.
 
         Checks project curricula/pools/ first, then package templates/curricula/pools/.
+        If a role-specific pool doesn't exist, falls back to the matching general pool.
         Returns a scenario string or dict (for constrained_tasks with constraints key).
         """
         pool_search_paths = [
@@ -619,12 +633,21 @@ class OnboardingEngine:
             PACKAGE_CURRICULA / "pools",
         ]
 
+        # Try the requested pool first, then fall back to general
+        pools_to_try = [pool_name]
+        for suffix, fallback in self._GENERAL_FALLBACKS.items():
+            if pool_name.endswith(suffix) and pool_name != fallback:
+                pools_to_try.append(fallback)
+
         pool_data = None
-        for base in pool_search_paths:
-            pool_file = base / f"{pool_name}.yaml"
-            if pool_file.exists():
-                with open(pool_file) as f:
-                    pool_data = yaml.safe_load(f)
+        for candidate in pools_to_try:
+            for base in pool_search_paths:
+                pool_file = base / f"{candidate}.yaml"
+                if pool_file.exists():
+                    with open(pool_file) as f:
+                        pool_data = yaml.safe_load(f)
+                    break
+            if pool_data and "scenarios" in pool_data:
                 break
 
         if pool_data is None or "scenarios" not in pool_data:
