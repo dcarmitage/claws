@@ -517,12 +517,13 @@ class OnboardingEngine:
                         "status": "passed",
                     },
                 ))
-                focus = f" — {task_def.eval_focus}" if task_def.eval_focus else ""
                 attempts = f" ({task_state.attempts} attempts)" if task_state.attempts > 1 else ""
                 console.print(
                     f"  [green][PASS][/] {task_def.id} {task_def.name:<30s} "
-                    f"{avg_score:.1f}/10{attempts}{focus}"
+                    f"{avg_score:.1f}/10{attempts}"
                 )
+                summary = self._summary_line(response_text)
+                console.print(f"         [dim]→ {summary}[/]")
 
                 # Write to memory/identity if specified
                 self._write_task_output(task_def, response_text, avg_score)
@@ -539,20 +540,12 @@ class OnboardingEngine:
                     self._append_to_memory(
                         f"### Reflection on {task_def.id} (attempt {task_state.attempts})\n\n{reflection_text}"
                     )
-                    # Extract brief feedback from judges
-                    feedback_bits = []
-                    for judge_name, r in eval_results.items():
-                        if r and r.get("rationale"):
-                            # First sentence of rationale
-                            rationale = r["rationale"].split(".")[0].strip()
-                            if len(rationale) > 60:
-                                rationale = rationale[:57] + "..."
-                            feedback_bits.append(rationale)
-                    brief_feedback = feedback_bits[0] if feedback_bits else "below threshold"
                     console.print(
                         f"  [yellow][RETRY][/] {task_def.id} {task_def.name:<30s} "
-                        f"{avg_score:.1f}/10  — {brief_feedback}, reflecting..."
+                        f"{avg_score:.1f}/10  — reflecting and retrying..."
                     )
+                    summary = self._summary_line(response_text)
+                    console.print(f"         [dim]→ {summary}[/]")
                 else:
                     task_state.status = "failed"
                     self.spine.emit(Event(
@@ -569,9 +562,29 @@ class OnboardingEngine:
                         f"  [red][FAIL][/] {task_def.id} {task_def.name:<30s} "
                         f"{avg_score:.1f}/10  ({task_state.attempts} attempts)"
                     )
+                    summary = self._summary_line(response_text)
+                    console.print(f"         [dim]→ {summary}[/]")
                     return False
 
         return False
+
+    @staticmethod
+    def _summary_line(text: str, max_len: int = 90) -> str:
+        """Extract the first substantive line from a response for display."""
+        for line in text.strip().split("\n"):
+            stripped = line.strip()
+            # Skip headings, blank lines, and very short lines
+            if not stripped or stripped.startswith("#") or len(stripped) < 15:
+                continue
+            # Skip common preamble patterns
+            if stripped.lower().startswith(("here is", "here's", "sure,", "certainly")):
+                continue
+            if len(stripped) > max_len:
+                return stripped[:max_len - 3] + "..."
+            return stripped
+        # Fallback: first N chars of the whole text
+        flat = text.strip().replace("\n", " ")[:max_len]
+        return flat + "..." if len(text.strip()) > max_len else flat
 
     def _get_agent_role(self) -> str:
         """Get the agent's role from config."""
