@@ -644,9 +644,7 @@ class OnboardingEngine:
         if not task_def.writes_to:
             return
 
-        summary = f"### {task_def.name} (score: {score:.1f}/10)\n\n{response_text[:500]}"
-        if len(response_text) > 500:
-            summary += "...\n"
+        summary = f"### {task_def.name} (score: {score:.1f}/10)\n\n{response_text}"
 
         if task_def.writes_to in ("memory", "both"):
             self._append_to_memory(summary)
