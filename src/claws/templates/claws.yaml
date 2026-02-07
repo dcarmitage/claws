@@ -8,7 +8,7 @@ version: 2
 providers:
   default:
     type: anthropic
-    model: claude-sonnet-4-5-20250929
+    model: claude-opus-4-6
     # api_key_env: ANTHROPIC_API_KEY  # reads from env by default
 
   # Uncomment to add more providers:
@@ -19,7 +19,7 @@ providers:
   #
   # openai:
   #   type: openai
-  #   model: gpt-4o
+  #   model: codex-5.3
   #   api_key_env: OPENAI_API_KEY
   #
   # custom:

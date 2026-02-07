@@ -10,14 +10,12 @@ Prerequisites:
 
 ```bash
 pip install git+https://github.com/dcarmitage/claws.git@prod
-claws init my-project && cd my-project
 
-# Set your API key (pick one):
-export ANTHROPIC_API_KEY=your-key      # Anthropic
-export OPENAI_API_KEY=your-key         # OpenAI
-export OPENROUTER_API_KEY=your-key     # OpenRouter
+# Guided setup — picks your provider, shows you what to configure:
+claws init my-project
+cd my-project
 
-# Verify setup:
+# Verify everything works:
 claws doctor
 
 # Create and train an agent:
@@ -32,7 +30,7 @@ claws agent create scout --role researcher --onboard default
 
 | Command | What it does |
 |---------|-------------|
-| `claws init <project>` | Create a new project with config and event log |
+| `claws init <project>` | Guided project setup — provider, model, API key |
 | `claws agent create <name> --role <role>` | Create an agent with identity and memory |
 | `claws agent create <name> --role <role> --onboard <curriculum>` | Create and immediately train |
 | `claws agent onboard <name>` | Train an agent through an onboarding curriculum |
@@ -48,31 +46,7 @@ claws agent create scout --role researcher --onboard default
 
 ## Configuration
 
-All project settings live in `claws.yaml`. Here are provider configurations for the three main providers:
-
-```yaml
-# Anthropic (recommended)
-providers:
-  default:
-    type: anthropic
-    model: claude-sonnet-4-5-20250929
-
-# OpenAI
-providers:
-  default:
-    type: openai-compatible
-    model: gpt-4o
-    base_url: https://api.openai.com/v1
-
-# OpenRouter (access to many models)
-providers:
-  default:
-    type: openai-compatible
-    model: anthropic/claude-sonnet-4-5-20250929
-    base_url: https://openrouter.ai/api/v1
-```
-
-A full `claws.yaml` also includes agent definitions and evaluation settings:
+`claws init` generates `claws.yaml` automatically. You can also edit it directly:
 
 ```yaml
 project: my-project
@@ -81,7 +55,13 @@ version: 2
 providers:
   default:
     type: anthropic
-    model: claude-sonnet-4-5-20250929
+    model: claude-opus-4-6
+
+  # Or use OpenAI:
+  # default:
+  #   type: openai-compatible
+  #   model: codex-5.3
+  #   base_url: https://api.openai.com/v1
 
 agents:
   scout:

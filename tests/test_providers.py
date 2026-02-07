@@ -108,7 +108,7 @@ class TestAnthropicProvider:
 
     def test_default_model(self):
         p = AnthropicProvider(api_key="key")
-        assert p.model == "claude-sonnet-4-5-20250929"
+        assert p.model == "claude-opus-4-6"
 
     def test_headers(self):
         p = AnthropicProvider(api_key="secret")
