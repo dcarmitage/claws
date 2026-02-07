@@ -43,10 +43,28 @@ class OpenAICompatProvider(Provider):
     async def complete(self, messages: list[Message], **kwargs) -> Response:
         body = self._build_request(messages, **kwargs)
         url = f"{self.base_url}/chat/completions"
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(url, headers=self._headers(), json=body)
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(url, headers=self._headers(), json=body)
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            if status_code in (401, 403):
+                raise RuntimeError(
+                    f"Authentication failed (HTTP {status_code}) for {self.base_url}. "
+                    "Check your API key configuration.\n"
+                    "Run: claws doctor"
+                ) from e
+            raise RuntimeError(
+                f"API error (HTTP {status_code}) from {self.base_url}: {e}"
+            ) from e
+        except httpx.ConnectError as e:
+            raise RuntimeError(
+                f"Cannot connect to {self.base_url}. "
+                "Check your network connection and base_url setting.\n"
+                "Run: claws doctor"
+            ) from e
 
         choice = data["choices"][0] if data.get("choices") else {}
         content = choice.get("message", {}).get("content", "")

@@ -1,7 +1,7 @@
-"""Event Spine — append-only typed event log.
+"""Event log — append-only typed event log.
 
 Every significant action in claws emits an event. Events are immutable
-and ordered. The spine is the single source of truth for system state.
+and ordered. The event log is the single source of truth for system state.
 """
 
 from __future__ import annotations

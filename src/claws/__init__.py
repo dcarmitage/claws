@@ -1,3 +1,3 @@
-"""claws — The operating system for human-AI teams."""
+"""claws — Build, train, and manage AI agents."""
 
-__version__ = "2.0.0a3"
+__version__ = "2.0.0a4"

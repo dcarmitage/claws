@@ -1,4 +1,10 @@
-# The Soul Architecture
+# Agent Identity Model
+
+> This is the original agent identity philosophy that inspired the current personality and identity system. The working implementation uses identity.md + personality traits — see `claws agent onboard`.
+
+---
+
+# The Agent Identity Model (Original Vision)
 
 *A blueprint for how an intelligence finds itself.*
 

@@ -1,39 +1,40 @@
-# Platform Notes
+# Platform Support
 
-## Raspberry Pi 5 (recommended)
+claws runs on any machine with Python 3.11+ and a terminal.
 
-- **CPU:** BCM2712 (Cortex-A76), 4 cores
-- **RAM:** 16GB recommended, 8GB minimum
-- **Storage:** 64GB+ microSD, USB drive for media
-- **OS:** Raspberry Pi OS Lite 64-bit or Debian Bookworm+
-- **Extras:** Hailo-8 AI accelerator (optional), CSI camera, USB audio
+## Supported platforms
 
-The Pi 5 handles LLM-gated builds, dual-judge evals, and multiple services concurrently. 16GB RAM is recommended for running Parakeet STT alongside agents.
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Linux** (x86_64, arm64) | Fully supported | Tested on Ubuntu, Debian, Raspberry Pi OS |
+| **macOS** (Intel, Apple Silicon) | Fully supported | Native Python 3.11+ required |
+| **Windows** (WSL2) | Supported | Use WSL2 with Ubuntu; native Windows not tested |
 
-## Raspberry Pi 4
+## Requirements
 
-- **CPU:** Cortex-A72, 4 cores
-- **RAM:** 4GB or 8GB
-- **Good for:** Lightweight agent tasks, task execution, poller daemons
-- **Limitations:** Slower inference, less concurrent capacity
-
-Works well as a secondary agent (Agent Beta) that receives dispatched tasks from a Pi 5.
-
-## Mac Mini / Mac Studio
-
-- **Good for:** Development, testing, orchestration
-- **Note:** OpenClaw and Claude Code work natively on macOS
-- **Camera/GPIO:** Not available (use Pi for hardware interaction)
-
-## General requirements
-
-| Dependency | Minimum version | Used by |
+| Dependency | Minimum version | Purpose |
 |-----------|----------------|---------|
-| Python | 3.11+ | All Python tools |
-| Node.js | 20+ | Ralph-loops dashboard, OpenClaw |
-| bash | 5.0+ | All shell scripts |
-| jq | 1.6+ | Judge scripts, JSON processing |
-| bc | any | Score threshold comparison |
-| curl | 7.0+ | LLM API calls |
-| git | 2.30+ | Version control |
-| sqlite3 | 3.35+ | AgentChat, media catalog |
+| Python | 3.11+ | Core CLI and all Python tools |
+| pip | 21+ | Package installation |
+| git | 2.30+ | Version control, event log |
+
+## Optional dependencies
+
+These are only needed for specific features:
+
+| Dependency | Purpose |
+|-----------|---------|
+| Node.js 20+ | AgentChat dashboard |
+| jq 1.6+ | JSON processing in shell scripts |
+| curl 7.0+ | LLM API calls from shell |
+| sqlite3 3.35+ | AgentChat message storage |
+| ffmpeg | Audio/video transcription tools |
+
+## Installation
+
+```bash
+pip install claws
+claws init
+```
+
+claws works the same way on all supported platforms. Hardware-specific features (camera, microphone, AI accelerator) are available as optional tools when the hardware is present.

@@ -1,6 +1,6 @@
 """Trust Profiles — track agent evaluation history and quality trends.
 
-A TrustProfile aggregates evaluation results from the event spine
+A TrustProfile aggregates evaluation results from the event log
 to provide per-agent quality metrics, judge-level breakdowns, and
 directional trends over time.
 """
@@ -40,7 +40,7 @@ class TrustProfile:
 
     @classmethod
     def for_agent(cls, spine: EventSpine, agent: str) -> TrustProfile:
-        """Build trust profile from event spine for an agent."""
+        """Build trust profile from event log for an agent."""
         eval_events = [
             e for e in spine.read_by_type(EVAL_COMPLETED)
             if e.agent == agent

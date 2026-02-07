@@ -1,6 +1,6 @@
 # Starter Kit — Bootstrap a New Agent
 
-Templates for initializing a new agent's identity and memory system. Copy this directory to a new agent's workspace and fill in the templates.
+Templates for initializing a new agent's identity and memory system. These are reference templates — in practice, `claws agent create` auto-generates the agent's workspace with the right structure.
 
 ## Files
 
@@ -15,13 +15,16 @@ Templates for initializing a new agent's identity and memory system. Copy this d
 ## Usage
 
 ```bash
-# Copy to new agent's workspace
-cp -r starter-kit/ /home/new-agent/
+# The recommended way to create an agent:
+claws agent create scout --role researcher
 
-# The agent fills in the templates during onboarding
-# or by following The Hundred Steps curriculum (see onboarding/)
+# To onboard with a training curriculum:
+claws agent create scout --role researcher --onboard default
+
+# Or onboard an existing agent:
+claws agent onboard scout --curriculum default
 ```
 
 ## How it connects
 
-The starter kit provides empty structures. The onboarding curriculum (`onboarding/THE_HUNDRED_STEPS.md`) guides the agent through filling them in through real discovery and experience, not pre-filled templates.
+The starter kit provides empty structures. The `claws agent onboard` command guides the agent through filling them in via structured curricula with progressive challenges and two-pass evaluation. See `onboarding/README.md` for details on the curriculum system.

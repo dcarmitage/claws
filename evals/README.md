@@ -1,61 +1,43 @@
-# Evals — Dual-Judge Evaluation System
+# Evaluation System
 
-Two independent LLM judges score every task's output before it can advance.
+claws uses two-pass evaluation to assess agent output quality. Two independent judges (logic and consistency) score every response, providing objective quality measurement.
 
 ## How it works
 
-```
-task-done → gather artifacts (diff, spec, taskboard) → run judges → gate
-```
+`claws evaluate <agent>` runs two judges against the agent's most recent task output:
 
-**Logic Judge** — falsification-oriented. Extracts testable claims from the spec, checks each against the diff and test output. Marks claims as CONFIRMED, REFUTED, or UNVERIFIABLE.
+1. **Logic judge** — Verifies factual accuracy, reasoning quality, task adherence, and hallucination detection
+2. **Consistency judge** — Checks completeness, coherence, quality, relevance, and format
 
-**Consistency Judge** — alignment-oriented. Checks 5 dimensions: spec-code, spec-tests, code-tests, taskboard-commit, and cross-file coherence. Weighted average score.
+Each judge scores 0-10 and assigns a quality tier.
 
-Both judges must score >= 8.0/10 to pass.
-
-## Tiers
+## Scoring tiers
 
 | Tier | Score | Meaning |
 |------|-------|---------|
-| GOLD | 9.0-10 | Perfect — all claims confirmed, full alignment |
-| SILVER | 8.0-8.9 | Strong — minor issues only |
-| BRONZE | 6.0-7.9 | Gaps found — fix before advancing |
-| INVALID | 0-5.9 | Critical failures — root cause required |
+| Gold | 8.0+ | Production quality |
+| Silver | 6.0-7.9 | Acceptable with minor issues |
+| Bronze | 4.0-5.9 | Needs improvement |
+| Fail | <4.0 | Unacceptable |
+
+## Judge prompts
+
+Judge system prompts are at `src/claws/templates/prompts/`. You can customize evaluation criteria by creating project-local prompt overrides.
+
+## Configuration
+
+In `claws.yaml`:
+```yaml
+eval:
+  judges: [logic, consistency]
+  threshold: 8.0
+  provider: default  # optional: use a different provider for evaluation
+```
 
 ## Usage
 
 ```bash
-# Full dual-judge evaluation
-bash evals/run_dual_judge_eval.sh \
-  --build-id B001 --task-id T1 \
-  --spec path/to/spec.md --taskboard path/to/taskboard.md \
-  --commit abc123
-
-# Single judge (for re-running the one that failed)
-bash evals/run_single_judge.sh --judge logic \
-  --build-id B001 --task-id T1 \
-  --spec path/to/spec.md --taskboard path/to/taskboard.md \
-  --commit abc123
-
-# Validate judge output format
-echo '{"judge":"logic","score":9.0,"tier":"GOLD","timestamp":"2026-01-01T00:00:00Z"}' | bash evals/validate_output.sh -
+claws evaluate <agent>              # evaluate last task output
+claws evaluate <agent> --output results.json  # save results
+claws agent info <agent>            # see evaluation history and trust score
 ```
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `run_dual_judge_eval.sh` | Orchestrator — runs both judges, applies thresholds |
-| `run_single_judge.sh` | Run one judge standalone |
-| `logic_judge.sh` | Logic judge — calls LLM with logic prompt |
-| `consistency_judge.sh` | Consistency judge — calls LLM with consistency prompt |
-| `validate_output.sh` | JSON schema validator for judge output |
-| `prompts/logic_judge.txt` | System prompt for the logic judge |
-| `prompts/consistency_judge.txt` | System prompt for the consistency judge |
-| `hooks/post_task_done.py` | PostToolUse hook — auto-triggers after task-done |
-
-## Requirements
-
-- `jq`, `bc`, `curl`, `python3`
-- An OpenAI-compatible LLM endpoint (set `OPENCLAW_URL` and `OPENCLAW_TOKEN`)

@@ -2,7 +2,7 @@
 
 ## System overview
 
-claws is a CLI tool that manages persistent AI agents. Each agent has identity, memory, and a trust score built from dual-judge evaluations. Agents connect to any LLM provider via a unified interface.
+claws is a CLI tool that manages persistent AI agents. Each agent has identity, memory, and a trust score built from two-pass evaluations. Agents connect to any LLM provider via a unified interface.
 
 ```
 ┌──────────────────────────────────────────────┐

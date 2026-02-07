@@ -1,41 +1,48 @@
-# Skills — Reusable Agent Capabilities
+# Skills
 
-Skills are markdown files with YAML frontmatter that give agents specific capabilities. When an agent invokes a skill (e.g., `/judge`, `/learn`), the LLM reads the SKILL.md as instructions.
+Skills are reusable agent capabilities defined as markdown instruction files. Each skill tells an LLM agent how to perform a specific task.
 
-## Available skills
+## Format
 
-| Skill | Command | Description |
-|-------|---------|-------------|
-| dual-judge | `/judge` | Run dual-judge evaluation on a commit |
-| learn | `/learn` | Analyze what was just learned (read-only) |
-| integrate | `/integrate` | Wire learnings into the memory system |
-| save-memory | `/save-memory` | End-of-session memory save |
-| task-dispatch | `/dispatch` | Dispatch tasks to other agents via AgentChat |
-| ralph-loops | — | Autonomous build loop framework |
-| camsnap | `/camsnap` | Camera snapshot and clip capture |
-| parakeet-stt | — | Local speech-to-text transcription |
-| video-subtitles | — | Generate and burn-in subtitles |
-| polylogue | — | Document collaboration webhook |
-
-## Creating a new skill
-
-1. Create a directory: `skills/my-skill/`
-2. Write `SKILL.md` with YAML frontmatter:
+A skill is a `SKILL.md` file with YAML frontmatter:
 
 ```yaml
 ---
 name: my-skill
-description: What this skill does (shown in skill listings)
-user-invocable: true  # Set to true if users can invoke with /my-skill
-allowed-tools: Read, Grep, Glob, Bash
+description: What this skill does
+user-invocable: true
+allowed-tools: Read, Write, Bash
 ---
+
+# Instructions for the agent
+Step 1: ...
+Step 2: ...
 ```
 
-3. Below the frontmatter, write instructions the LLM will follow when the skill is invoked.
+## Active skills
 
-## Skill conventions
+| Skill | What it does |
+|-------|-------------|
+| `build-team/` | Dispatch structured plans to parallel agent teams |
+| `learn/` | Analyze work and extract patterns (read-only) |
+| `integrate/` | Wire learnings into memory and documentation |
+| `save-memory/` | Comprehensive end-of-session memory capture |
+| `dual-judge/` | Two-pass evaluation (logic + consistency judges) |
+| `task-dispatch/` | Send tasks to agents via messaging |
 
-- `$ARGUMENTS` is replaced with whatever the user typed after the command
-- Skills should be self-contained — don't assume the agent has read other files
-- Include concrete `bash` commands the agent can run
-- Specify what tools the skill needs in `allowed-tools`
+## Hardware examples
+
+These skills are specific to certain hardware deployments:
+
+| Skill | What it does |
+|-------|-------------|
+| `camsnap/` | Camera snapshot and clip capture |
+| `parakeet-stt/` | Local speech-to-text transcription |
+| `video-subtitles/` | Generate and burn subtitles into video |
+
+## Advanced
+
+| Skill | What it does |
+|-------|-------------|
+| `ralph-loops/` | Autonomous build loop framework |
+| `polylogue/` | Multi-document collaboration via webhooks |

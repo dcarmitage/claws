@@ -9,15 +9,16 @@ from claws.commands.run import run
 from claws.commands.status import status
 from claws.commands.evaluate import evaluate
 from claws.commands.curriculum import curriculum
+from claws.commands.doctor import doctor
 
 
-@click.group()
+@click.group(epilog="New to claws? Start with: claws init my-project")
 @click.version_option(version=__version__, prog_name="claws")
 def main():
-    """claws — The operating system for human-AI teams.
+    """claws — Build, train, and manage AI agents.
 
-    Your agents build software, evaluate their own work, and get better
-    over time. You review PRs.
+    Create agents, train them through structured curricula, evaluate
+    their work with two-pass scoring, and build trust over time.
     """
 
 
@@ -27,3 +28,4 @@ main.add_command(run)
 main.add_command(status)
 main.add_command(evaluate)
 main.add_command(curriculum)
+main.add_command(doctor)

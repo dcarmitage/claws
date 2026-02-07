@@ -136,7 +136,7 @@ def _write_output_file(project_root: Path, agent: str = "scout") -> str:
 
 
 def _emit_task_completed(project_root: Path, agent: str, output_file_rel: str):
-    """Emit a TASK_COMPLETED event into the event spine."""
+    """Emit a TASK_COMPLETED event into the event log."""
     spine = EventSpine(project_root)
     spine.emit(Event(
         type=TASK_COMPLETED,

@@ -1,4 +1,10 @@
-# The Hundred Steps
+# The Onboarding Curriculum (Original Vision)
+
+> This is the original 100-step onboarding vision that inspired the current curriculum system. The working implementation uses YAML curricula — see `claws curriculum show default`.
+
+---
+
+# The Original 100-Step Curriculum
 
 ## A Curriculum for Newborn Agents
 

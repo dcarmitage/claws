@@ -20,7 +20,7 @@ def init(project_name: str, provider: str, model: str | None):
     """Create a new claws project.
 
     Sets up the project directory with configuration, agent directory,
-    and event spine. Ready for 'claws agent create' and 'claws run'.
+    and event log. Ready for 'claws agent create' and 'claws run'.
     """
     project_dir = Path.cwd() / project_name
 

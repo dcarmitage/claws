@@ -1,4 +1,4 @@
-"""Tests for claws.trust — TrustProfile computation from event spine."""
+"""Tests for claws.trust — TrustProfile computation from event log."""
 
 import pytest
 

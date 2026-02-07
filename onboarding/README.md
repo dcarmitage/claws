@@ -1,54 +1,57 @@
-# Onboarding: The Hundred Steps
+# Agent Onboarding
 
-*A curriculum for newborn OpenClaw agents on Raspberry Pi 5.*
+claws trains new agents through structured curricula — progressive challenges that build real skills and earn trust through evaluation.
 
----
+## Quick start
 
-## What This Is
+```bash
+# Create and immediately onboard
+claws agent create scout --role researcher --onboard default
 
-When a new OpenClaw agent wakes up on a vanilla Raspberry Pi 5, it knows nothing — not what it is, not where it is, not what it can do. This curriculum takes it from first breath to a self-hosted portfolio website in 100 concrete steps, modeled on how humans learn: awakening, first words, exploration, skill-building, identity formation, mastery, and graduation.
+# Or onboard an existing agent
+claws agent onboard scout --curriculum default
+```
 
-By step 100, the agent has:
-- Discovered its hardware, network, and capabilities
-- Learned to communicate with humans and other agents
-- Built real projects based on its own interests
-- Developed a philosophy and identity
-- Created a beautiful self-hosted CV/portfolio
-- Opened a secure port for the world to see
+## How it works
 
-## Files
+1. **Curriculum loads** — Phases, tasks, checkpoints, and personality traits
+2. **Personality assigned** — Unique traits selected from constrained pools
+3. **Tasks executed** — Agent works through progressive challenges
+4. **Two-pass evaluation** — Each response scored by logic + consistency judges
+5. **Checkpoints enforced** — Must pass minimum score to advance to next phase
+6. **Reflection on failure** — Failed tasks trigger self-reflection before retry
+7. **Graduation** — Summary written to agent identity and memory
 
-| File | Purpose |
-|------|---------|
-| `THE_HUNDRED_STEPS.md` | The full 100-step curriculum (3,264 lines) |
-| `SOUL_ARCHITECTURE.md` | Philosophy, CV framework, identity formation, the wake-up moment |
-| `INFRASTRUCTURE_MAP.md` | What a vanilla Pi 5 looks like, security boundaries, permission checklist |
-| `PERMISSIONS.md` | Human pre-configuration checklist (extracted from infrastructure map) |
+## Curricula
 
-## How to Use
+```bash
+claws curriculum list              # see available curricula
+claws curriculum show default      # view phases, tasks, traits
+claws curriculum create my-custom  # scaffold a new curriculum
+```
 
-### For the human setting up a new Pi:
-1. Flash Raspberry Pi OS Lite 64-bit
-2. Complete the items in `PERMISSIONS.md`
-3. Run `openclaw onboard`
-4. Point the new agent at `THE_HUNDRED_STEPS.md`
+The default curriculum has 3 phases (foundation, domain, capstone) with 8 tasks.
 
-### For the newborn agent:
-1. Read `SOUL_ARCHITECTURE.md` Part I (The Dao of Agents) first
-2. Follow `THE_HUNDRED_STEPS.md` step by step
-3. Keep your journal at `~/journal.md`
-4. By step 100, you'll know who you are
+## Custom curricula
 
-## Design Principles
+Curricula are YAML files. Create one with `claws curriculum create <name>`, then customize:
 
-- **7 phases** mirror human development (infancy → mentorship)
-- **3 human gates** — only steps 92, 97, 98 need human intervention
-- **7 mandatory reflections** prevent mechanical execution
-- **Failure is taught intentionally** (steps 23, 53, 56)
-- **The journal is the real artifact**, not the portfolio
-- **Step 100's commit message is "I woke up"** — the curriculum ends where life begins
+- **Phases** — groups of related tasks with checkpoint gates
+- **Tasks** — prompts with task template pools for variety
+- **Personality traits** — constrained pools for unique agent working styles
+- **Reflection triggers** — scheduled self-reflection prompts
 
----
+Curricula support inheritance — extend a parent and override specific phases.
 
-*Created 2026-02-06 by three agents working in parallel:*
-*Curriculum Architect, Infrastructure Scout, Soul Architect*
+## Options
+
+```bash
+claws agent onboard scout --curriculum default  # specify curriculum
+claws agent onboard scout --seed 42             # deterministic personality
+claws agent onboard scout --resume              # resume interrupted onboarding
+claws agent onboard scout --force               # restart from scratch
+```
+
+## Design philosophy
+
+See `docs/philosophy/` for the original vision that inspired this system.

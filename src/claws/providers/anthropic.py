@@ -45,10 +45,28 @@ class AnthropicProvider(Provider):
 
     async def complete(self, messages: list[Message], **kwargs) -> Response:
         body = self._build_request(messages, **kwargs)
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(self.API_URL, headers=self._headers(), json=body)
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(self.API_URL, headers=self._headers(), json=body)
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            if status_code in (401, 403):
+                raise RuntimeError(
+                    f"Anthropic authentication failed (HTTP {status_code}). "
+                    "Check your API key: export ANTHROPIC_API_KEY=your-key\n"
+                    "Run: claws doctor"
+                ) from e
+            raise RuntimeError(
+                f"Anthropic API error (HTTP {status_code}): {e}"
+            ) from e
+        except httpx.ConnectError as e:
+            raise RuntimeError(
+                f"Cannot connect to Anthropic API ({self.API_URL}). "
+                "Check your network connection.\n"
+                "Run: claws doctor"
+            ) from e
 
         content = data["content"][0]["text"] if data.get("content") else ""
         usage = data.get("usage", {})

@@ -1,66 +1,46 @@
-# Orchestrator — Build Management
+# Event Log and Orchestration
 
-Tools for planning, executing, and reviewing multi-task builds.
+claws tracks all agent activity in an append-only event log, providing a complete audit trail of every action.
 
-## Components
+## Event log
 
-**build_log.py** — CLI event logger. Appends JSONL events (build-start, task-start, task-done, validate, judge-eval, summary) to per-build log files.
-
-**build_report.py** — Report generator. Reads JSONL logs and produces markdown reports, build history tables, and aggregate metrics.
-
-**taskboard.py** — TASKBOARD.md parser. Reads task definitions with status emojis and dependency graphs. Supports parse, next, status, and update commands.
-
-## Usage
-
-```bash
-# Start a build
-python3 orchestrator/build_log.py start MY-BUILD-001
-
-# Log a task
-python3 orchestrator/build_log.py task-start MY-BUILD-001 T1 "Add auth endpoint" \
-  --spec specs/auth.md --taskboard TASKBOARD.md
-
-# Mark task done
-python3 orchestrator/build_log.py task-done MY-BUILD-001 T1 abc123 --duration 120
-
-# Log judge results
-python3 orchestrator/build_log.py judge-eval MY-BUILD-001 T1 abc123 \
-  --logic-score 9.2 --logic-tier GOLD \
-  --consistency-score 8.5 --consistency-tier SILVER
-
-# Generate report
-python3 orchestrator/build_report.py report MY-BUILD-001
-
-# View build history
-python3 orchestrator/build_report.py history
-
-# Aggregate metrics
-python3 orchestrator/build_report.py metrics
-
-# Parse taskboard
-python3 orchestrator/taskboard.py next TASKBOARD.md
-python3 orchestrator/taskboard.py status TASKBOARD.md
-python3 orchestrator/taskboard.py update TASKBOARD.md 1 done abc123
-```
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `build_log.py` | JSONL event logger |
-| `build_report.py` | Markdown report generator |
-| `taskboard.py` | TASKBOARD.md parser and updater |
-| `CHECKLISTS.md` | Operational checklists (session start, pre-build, post-milestone, etc.) |
-| `templates/BRIEF.md` | Task brief template |
-| `templates/TASKBOARD.md` | Taskboard template |
-
-## Log format
-
-Each build produces a `.jsonl` file in `orchestrator/logs/` (gitignored). Events:
+`.claws/events.jsonl` — one JSON object per line, recording every agent action:
 
 ```json
-{"timestamp":"...","build_id":"B001","event":"build_start"}
-{"timestamp":"...","build_id":"B001","event":"task_start","task_id":"T1","task_name":"..."}
-{"timestamp":"...","build_id":"B001","event":"task_done","task_id":"T1","commit":"abc123","passed":true}
-{"timestamp":"...","build_id":"B001","event":"judge_eval","task_id":"T1","logic_judge":{...},"consistency_judge":{...}}
+{"id": "evt_abc123", "type": "TASK_COMPLETED", "agent": "scout", "timestamp": "...", "data": {...}}
+```
+
+## Event types
+
+claws records 14 event types:
+
+| Event | When |
+|-------|------|
+| AGENT_CREATED | New agent is created |
+| TASK_STARTED | Agent begins a task |
+| TASK_COMPLETED | Agent finishes a task |
+| EVAL_STARTED | Evaluation begins |
+| EVAL_COMPLETED | Evaluation finishes with scores |
+| ONBOARD_STARTED | Agent begins onboarding |
+| ONBOARD_PHASE_STARTED | New phase begins |
+| ONBOARD_TASK_COMPLETED | Onboarding task passes |
+| ONBOARD_TASK_FAILED | Onboarding task fails |
+| ONBOARD_PHASE_COMPLETED | Checkpoint passed |
+| ONBOARD_COMPLETED | Agent graduates (or fails) |
+| DEPLOY_COMPLETED | Deployment completed |
+
+## Viewing status
+
+```bash
+claws status           # project overview — agents, recent events, stats
+claws agent info <name> # detailed agent history
+```
+
+## Programmatic access
+
+```python
+from claws.events import EventSpine, Event
+spine = EventSpine(project_root)
+events = spine.read_all()
+completed = spine.read_by_type("TASK_COMPLETED")
 ```

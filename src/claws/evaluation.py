@@ -2,7 +2,7 @@
 
 This module contains the reusable evaluation primitives extracted from the
 evaluate CLI command. Both the CLI and the onboarding engine can use these
-functions without depending on Click, Rich, or the event spine.
+functions without depending on Click, Rich, or the event log.
 """
 
 from __future__ import annotations

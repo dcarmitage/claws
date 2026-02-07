@@ -135,8 +135,14 @@ class OnboardingEngine:
             },
         ))
 
-        # Print header
+        # Pre-flight summary
+        total_tasks = sum(len(p.tasks) for p in curriculum.phases)
         console.print()
+        console.print(f"Starting onboarding: {total_tasks} tasks across {len(curriculum.phases)} phases (~5-7 minutes)")
+        console.print(f"Curriculum: {self.curriculum_name} | Preview: claws curriculum show {self.curriculum_name}")
+        console.print()
+
+        # Print header
         console.print(f"[bold]Onboarding {self.agent_name}[/] [{self.curriculum_name} curriculum]")
         console.print(f"Seed: {state.seed}")
         if state.traits:
@@ -191,10 +197,16 @@ class OnboardingEngine:
                     # Exhausted retries already
                     continue
 
+                # Compute global task number for progress display
+                global_task_num = sum(
+                    len(curriculum.phases[pi].tasks) for pi in range(phase_idx)
+                ) + task_idx + 1
+
                 # Run this task
                 passed = await self._run_task(
                     provider, curriculum, phase_def, phase_idx, task_def, task_idx,
                     task_state, state, temp_offset,
+                    total_tasks=total_tasks, global_task_num=global_task_num,
                 )
 
                 if passed:
@@ -333,6 +345,8 @@ class OnboardingEngine:
         task_state: TaskState,
         state: OnboardingState,
         temp_offset: float,
+        total_tasks: int = 0,
+        global_task_num: int = 0,
     ) -> bool:
         """Run a single task with retries. Returns True if passed."""
         threshold = curriculum.defaults.get("eval_threshold", 8.0)
@@ -342,8 +356,9 @@ class OnboardingEngine:
             task_state.attempts += 1
             task_state.status = "in_progress"
 
+            progress = f"Task {global_task_num}/{total_tasks} | " if total_tasks else ""
             console.print(
-                f"  [    ] {task_def.id} {task_def.name:<30s} running...",
+                f"  [    ] {progress}{task_def.id} {task_def.name:<30s} running...",
                 end="\r",
             )
 

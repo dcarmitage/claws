@@ -1,4 +1,4 @@
-"""claws evaluate -- evaluate agent task output using dual judge prompts."""
+"""claws evaluate -- evaluate agent task output using two-pass scoring."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ console = Console()
 @click.option("--provider", "provider_name", default=None, help="Provider to use for evaluation")
 @click.option("--output", "output_path", type=click.Path(), default=None, help="Save results JSON to file")
 def evaluate(agent_name: str, provider_name: str | None, output_path: str | None):
-    """Evaluate an agent's last task output using dual judge prompts.
+    """Evaluate an agent's last task output using two-pass scoring.
 
     Runs logic and consistency judges against the agent's most recent
     task output and reports quality scores.
@@ -181,6 +181,12 @@ def evaluate(agent_name: str, provider_name: str | None, output_path: str | None
     else:
         console.print("[red]All judges failed to produce results.[/]")
         all_passed = False
+
+    # Post-evaluation guidance
+    if not all_passed:
+        console.print()
+        console.print(f"[dim]Tip: Re-run the task with: claws run {agent_name} \"revised prompt\"")
+        console.print(f"     Or add guidance to agents/{agent_name}/memory.md[/]")
 
     # Emit eval completed event
     spine.emit(Event(
