@@ -14,6 +14,7 @@ from typing import Any
 
 import yaml
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from claws.config import find_project_root, load_config
@@ -187,9 +188,11 @@ class OnboardingEngine:
                 if task_state.status == "passed":
                     tasks_completed_in_phase += 1
                     score_display = f"{task_state.scores[-1]:.1f}/10" if task_state.scores else "?"
+                    focus = f" — {task_def.eval_focus}" if task_def.eval_focus else ""
+                    attempts = f" ({task_state.attempts} attempts)" if task_state.attempts > 1 else ""
                     console.print(
                         f"  [green][PASS][/] {task_def.id} {task_def.name:<30s} "
-                        f"{score_display}  ({task_state.attempts} attempt{'s' if task_state.attempts != 1 else ''})"
+                        f"{score_display}{attempts}{focus}"
                     )
                     continue
 
@@ -287,8 +290,31 @@ class OnboardingEngine:
                     "status": "completed",
                 },
             ))
+
+            # Compute summary stats
+            all_scores = []
+            for phase in state.phases:
+                for task in phase.tasks:
+                    if task.scores:
+                        all_scores.append(task.scores[-1])
+            avg = sum(all_scores) / len(all_scores) if all_scores else 0.0
+
+            agent_role = self._get_agent_role()
+            agent_dir_rel = f"agents/{self.agent_name}"
+
             console.print()
-            console.print(f"[bold green]Onboarding complete![/] {self.agent_name} graduated from {self.curriculum_name}.")
+            console.print(Panel.fit(
+                f"[bold green]{self.agent_name} graduated![/]\n\n"
+                f"  Score:     {avg:.1f}/10 across {len(all_scores)} evaluations\n"
+                f"  Identity:  {agent_dir_rel}/identity.md\n"
+                f"  Memory:    {agent_dir_rel}/memory.md\n\n"
+                f"[bold]What to do next:[/]\n"
+                f"  claws agent info {self.agent_name}              [dim]# see identity + scores[/]\n"
+                f"  claws run {self.agent_name} \"<your task>\"       [dim]# give it real work[/]\n"
+                f"  claws evaluate {self.agent_name}                [dim]# score the output[/]\n",
+                title="Onboarding complete",
+                border_style="green",
+            ))
         else:
             state.status = "failed"
             self.spine.emit(Event(
@@ -300,7 +326,10 @@ class OnboardingEngine:
                 },
             ))
             console.print()
-            console.print(f"[bold red]Onboarding failed.[/] {self.agent_name} did not pass all phases.")
+            console.print(
+                f"[bold red]Onboarding failed.[/] {self.agent_name} did not pass all phases.\n"
+                f"  Resume with: claws agent onboard {self.agent_name} --resume"
+            )
 
         state.save(self.state_path)
         return state
@@ -488,9 +517,11 @@ class OnboardingEngine:
                         "status": "passed",
                     },
                 ))
+                focus = f" — {task_def.eval_focus}" if task_def.eval_focus else ""
+                attempts = f" ({task_state.attempts} attempts)" if task_state.attempts > 1 else ""
                 console.print(
                     f"  [green][PASS][/] {task_def.id} {task_def.name:<30s} "
-                    f"{avg_score:.1f}/10  ({task_state.attempts} attempt{'s' if task_state.attempts != 1 else ''})"
+                    f"{avg_score:.1f}/10{attempts}{focus}"
                 )
 
                 # Write to memory/identity if specified
@@ -508,9 +539,19 @@ class OnboardingEngine:
                     self._append_to_memory(
                         f"### Reflection on {task_def.id} (attempt {task_state.attempts})\n\n{reflection_text}"
                     )
+                    # Extract brief feedback from judges
+                    feedback_bits = []
+                    for judge_name, r in eval_results.items():
+                        if r and r.get("rationale"):
+                            # First sentence of rationale
+                            rationale = r["rationale"].split(".")[0].strip()
+                            if len(rationale) > 60:
+                                rationale = rationale[:57] + "..."
+                            feedback_bits.append(rationale)
+                    brief_feedback = feedback_bits[0] if feedback_bits else "below threshold"
                     console.print(
                         f"  [yellow][RETRY][/] {task_def.id} {task_def.name:<30s} "
-                        f"{avg_score:.1f}/10  (retrying...)"
+                        f"{avg_score:.1f}/10  — {brief_feedback}, reflecting..."
                     )
                 else:
                     task_state.status = "failed"
