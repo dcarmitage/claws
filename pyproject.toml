@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claws"
-version = "2.0.0a1"
+version = "2.0.0a2"
 description = "The operating system for human-AI teams"
 readme = "README.md"
 license = "MIT"
@@ -45,3 +45,6 @@ Documentation = "https://claws.com/docs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/claws"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/claws/templates" = "claws/templates"

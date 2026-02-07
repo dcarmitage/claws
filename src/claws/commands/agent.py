@@ -4,10 +4,12 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from claws.config import find_project_root, load_config, CONFIG_FILENAME
 from claws.events import EventSpine, Event, AGENT_CREATED
+from claws.trust import TrustProfile
 
 console = Console()
 TEMPLATES = Path(__file__).parent.parent / "templates"
@@ -84,21 +86,37 @@ def list_agents():
         console.print("No agents found. Create one with: [bold]claws agent create <name> --role <role>[/]")
         return
 
+    spine = EventSpine(project_root)
+
     table = Table(title="Agents")
     table.add_column("Name", style="bold")
     table.add_column("Role")
     table.add_column("Provider")
     table.add_column("Machine")
+    table.add_column("Trust")
 
     # Show agents from config
     for name, agent_cfg in config.agents.items():
-        table.add_row(name, agent_cfg.role, agent_cfg.provider, agent_cfg.machine)
+        profile = TrustProfile.for_agent(spine, name)
+        if profile.eval_count == 0:
+            trust_text = "[dim]new[/]"
+        else:
+            avg = profile.average
+            if avg is not None and avg >= 8.0:
+                trust_text = f"[green]{avg:.1f}[/]"
+            elif avg is not None and avg >= 6.0:
+                trust_text = f"[yellow]{avg:.1f}[/]"
+            elif avg is not None:
+                trust_text = f"[red]{avg:.1f}[/]"
+            else:
+                trust_text = "[dim]new[/]"
+        table.add_row(name, agent_cfg.role, agent_cfg.provider, agent_cfg.machine, trust_text)
 
     # Show agents on disk but not in config
     if agents_dir.exists():
         for agent_path in sorted(agents_dir.iterdir()):
             if agent_path.is_dir() and agent_path.name not in config.agents:
-                table.add_row(agent_path.name, "[dim]unregistered[/]", "-", "-")
+                table.add_row(agent_path.name, "[dim]unregistered[/]", "-", "-", "-")
 
     console.print(table)
 
@@ -122,8 +140,24 @@ def info(name: str):
     if identity_path.exists():
         console.print(identity_path.read_text())
 
-    # Show recent events
+    # Show trust profile
     spine = EventSpine(project_root)
+    profile = TrustProfile.for_agent(spine, name)
+    if profile.eval_count > 0:
+        trust_lines = []
+        trust_lines.append(f"Evaluations: {profile.eval_count}")
+        if profile.average is not None:
+            avg = profile.average
+            color = "green" if avg >= 8.0 else "yellow" if avg >= 6.0 else "red"
+            trust_lines.append(f"Overall:     [{color}]{avg:.1f}[/]")
+        for judge, avg in profile.judge_averages.items():
+            color = "green" if avg >= 8.0 else "yellow" if avg >= 6.0 else "red"
+            trust_lines.append(f"  {judge}: [{color}]{avg:.1f}[/]")
+        trust_lines.append(f"Trend:       {profile.trend}")
+        console.print()
+        console.print(Panel("\n".join(trust_lines), title="Trust Profile", border_style="cyan"))
+
+    # Show recent events
     events = spine.read_by_agent(name)
     if events:
         console.print(f"\n[bold]Recent events:[/] ({len(events)} total)")

@@ -142,7 +142,7 @@ def run(agent_name: str, task: str, no_stream: bool, save: bool):
             "tokens_in": tokens_in,
             "tokens_out": tokens_out,
             "elapsed_s": round(elapsed, 1),
-            "output_file": str(output_path) if output_path else None,
+            "output_file": str(output_path.relative_to(project_root)) if output_path else None,
         },
     ))
 

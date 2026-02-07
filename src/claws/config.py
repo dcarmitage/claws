@@ -45,6 +45,7 @@ class EvalConfig:
     """Configuration for the evaluation pipeline."""
     judges: list[str] = field(default_factory=lambda: ["logic", "consistency"])
     threshold: float = 8.0
+    provider: str | None = None
 
 
 @dataclass
@@ -118,6 +119,7 @@ def load_config(project_root: Path | None = None) -> ProjectConfig:
     eval_config = EvalConfig(
         judges=eval_raw.get("judges", ["logic", "consistency"]),
         threshold=eval_raw.get("threshold", 8.0),
+        provider=eval_raw.get("provider"),
     )
 
     return ProjectConfig(

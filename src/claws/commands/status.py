@@ -13,6 +13,7 @@ from claws.events import (
     EventSpine, TASK_STARTED, TASK_COMPLETED, TASK_FAILED,
     AGENT_CREATED, EVAL_COMPLETED,
 )
+from claws.trust import TrustProfile
 
 console = Console()
 
@@ -57,6 +58,7 @@ def _print_agent_table(config, spine):
     table.add_column("Tasks")
     table.add_column("Last Task")
     table.add_column("Status")
+    table.add_column("Trust")
 
     for name, agent_cfg in config.agents.items():
         agent_events = spine.read_by_agent(name)
@@ -86,7 +88,22 @@ def _print_agent_table(config, spine):
         else:
             status_text = "[dim]new[/]"
 
-        table.add_row(name, agent_cfg.role, task_count, task_text, status_text)
+        # Trust
+        profile = TrustProfile.for_agent(spine, name)
+        if profile.eval_count == 0:
+            trust_text = "[dim]new[/]"
+        else:
+            avg = profile.average
+            if avg is not None and avg >= 8.0:
+                trust_text = f"[green]{avg:.1f}[/]"
+            elif avg is not None and avg >= 6.0:
+                trust_text = f"[yellow]{avg:.1f}[/]"
+            elif avg is not None:
+                trust_text = f"[red]{avg:.1f}[/]"
+            else:
+                trust_text = "[dim]new[/]"
+
+        table.add_row(name, agent_cfg.role, task_count, task_text, status_text, trust_text)
 
     if config.agents:
         console.print(table)

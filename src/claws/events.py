@@ -39,6 +39,7 @@ TASK_COMPLETED = "task.completed"
 TASK_FAILED = "task.failed"
 EVAL_STARTED = "eval.started"
 EVAL_COMPLETED = "eval.completed"
+DEPLOY_COMPLETED = "deploy.completed"
 PROJECT_INITIALIZED = "project.initialized"
 
 

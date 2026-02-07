@@ -7,6 +7,7 @@ from claws.commands.init import init
 from claws.commands.agent import agent
 from claws.commands.run import run
 from claws.commands.status import status
+from claws.commands.evaluate import evaluate
 
 
 @click.group()
@@ -23,3 +24,4 @@ main.add_command(init)
 main.add_command(agent)
 main.add_command(run)
 main.add_command(status)
+main.add_command(evaluate)
