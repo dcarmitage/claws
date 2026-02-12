@@ -2,7 +2,6 @@
 
 import json
 import yaml
-import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
@@ -180,3 +179,104 @@ class TestAgentInfo:
             result = runner.invoke(main, ["agent", "info", "ghost"])
             assert result.exit_code != 0
             assert "not found" in result.output
+
+
+class TestAgentSnapshots:
+    def test_snapshot_creates_files(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            root = Path(td)
+            _make_project(root)
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            result = runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+            assert result.exit_code == 0, result.output
+
+            snapshots_root = root / ".claws" / "snapshots" / "scout"
+            snapshot_dirs = sorted([p for p in snapshots_root.iterdir() if p.is_dir()])
+            assert len(snapshot_dirs) == 1
+            snap = snapshot_dirs[0]
+            assert (snap / "identity.md").exists()
+            assert (snap / "memory.md").exists()
+            manifest = json.loads((snap / "manifest.json").read_text())
+            assert manifest["agent"] == "scout"
+            assert manifest["snapshot"] == snap.name
+
+    def test_snapshot_restore_latest(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            root = Path(td)
+            _make_project(root)
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            identity_path = root / "agents" / "scout" / "identity.md"
+            memory_path = root / "agents" / "scout" / "memory.md"
+
+            identity_path.write_text("identity v1")
+            memory_path.write_text("memory v1")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            identity_path.write_text("identity v2")
+            memory_path.write_text("memory v2")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            identity_path.write_text("dirty")
+            memory_path.write_text("dirty")
+
+            result = runner.invoke(main, ["agent", "restore", "scout"], catch_exceptions=False)
+            assert result.exit_code == 0, result.output
+            assert identity_path.read_text() == "identity v2"
+            assert memory_path.read_text() == "memory v2"
+
+    def test_snapshot_restore_specific(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            root = Path(td)
+            _make_project(root)
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            identity_path = root / "agents" / "scout" / "identity.md"
+            memory_path = root / "agents" / "scout" / "memory.md"
+
+            identity_path.write_text("first")
+            memory_path.write_text("first")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            first_snap = sorted((root / ".claws" / "snapshots" / "scout").iterdir())[0].name
+
+            identity_path.write_text("second")
+            memory_path.write_text("second")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            identity_path.write_text("dirty")
+            memory_path.write_text("dirty")
+
+            result = runner.invoke(
+                main,
+                ["agent", "restore", "scout", "--snapshot", first_snap],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0, result.output
+            assert identity_path.read_text() == "first"
+            assert memory_path.read_text() == "first"
+
+    def test_snapshots_list(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            result = runner.invoke(main, ["agent", "snapshots", "list", "scout"], catch_exceptions=False)
+            assert result.exit_code == 0
+            assert "Snapshots: scout" in result.output
+
+    def test_restore_without_snapshots_fails(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            result = runner.invoke(main, ["agent", "restore", "scout"])
+            assert result.exit_code != 0
+            assert "No snapshots found" in result.output
