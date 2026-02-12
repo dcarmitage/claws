@@ -1,5 +1,7 @@
 """claws agent — manage agents in a project."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import shutil
@@ -12,7 +14,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from claws.config import find_project_root, load_config, CONFIG_FILENAME
-from claws.events import EventSpine, Event, AGENT_CREATED
+from claws.events import (
+    EventSpine,
+    Event,
+    AGENT_CREATED,
+    AGENT_SNAPSHOT_CREATED,
+    AGENT_SNAPSHOT_RESTORED,
+)
 from claws.trust import TrustProfile
 
 console = Console()
@@ -199,31 +207,16 @@ def snapshot(name: str):
         console.print(f"[red]Error:[/] Agent '{name}' not found.")
         raise SystemExit(1)
 
-    missing = [f for f in SNAPSHOT_FILES if not (agent_dir / f).exists()]
-    if missing:
-        console.print(f"[red]Error:[/] Missing files for snapshot: {', '.join(missing)}")
+    try:
+        snapshot_dir = _create_snapshot(project_root, name, require_all_files=True)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/] {exc}")
         raise SystemExit(1)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
-    snapshot_dir = _snapshots_root(project_root, name) / timestamp
-    snapshot_dir.mkdir(parents=True, exist_ok=False)
-
-    for filename in SNAPSHOT_FILES:
-        shutil.copy2(agent_dir / filename, snapshot_dir / filename)
-
-    manifest = {
-        "agent": name,
-        "snapshot": timestamp,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "files": list(SNAPSHOT_FILES),
-        "source": str(agent_dir.relative_to(project_root)),
-    }
-    (snapshot_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-
     EventSpine(project_root).emit(Event(
-        type="agent.snapshot.created",
+        type=AGENT_SNAPSHOT_CREATED,
         agent=name,
-        data={"snapshot": timestamp},
+        data={"snapshot": snapshot_dir.name},
     ))
 
     console.print(f"[green]Snapshot created:[/] {snapshot_dir.relative_to(project_root)}")
@@ -233,7 +226,9 @@ def snapshot(name: str):
 @click.argument("name")
 @click.option("--snapshot", "snapshot_id", default=None,
               help="Snapshot timestamp (default: latest)")
-def restore(name: str, snapshot_id: str | None):
+@click.option("--no-backup", is_flag=True, default=False,
+              help="Skip automatic safety snapshot before restore")
+def restore(name: str, snapshot_id: str | None, no_backup: bool):
     """Restore an agent's identity.md and memory.md from a snapshot."""
     project_root = find_project_root()
     if project_root is None:
@@ -258,16 +253,35 @@ def restore(name: str, snapshot_id: str | None):
         console.print(f"[red]Error:[/] Snapshot missing required files: {', '.join(missing)}")
         raise SystemExit(1)
 
+    backup_snapshot = None
+    if not no_backup:
+        backup_snapshot = _create_snapshot(
+            project_root,
+            name,
+            require_all_files=False,
+            note="auto-pre-restore-backup",
+        )
+
     for filename in SNAPSHOT_FILES:
         shutil.copy2(snapshot_dir / filename, agent_dir / filename)
 
+    event_data = {"snapshot": snapshot_dir.name}
+    if backup_snapshot is not None:
+        event_data["backup_snapshot"] = backup_snapshot.name
+
     EventSpine(project_root).emit(Event(
-        type="agent.snapshot.restored",
+        type=AGENT_SNAPSHOT_RESTORED,
         agent=name,
-        data={"snapshot": snapshot_dir.name},
+        data=event_data,
     ))
 
-    console.print(f"[green]Restored[/] agent '{name}' from snapshot {snapshot_dir.name}")
+    if backup_snapshot is not None:
+        console.print(
+            f"[green]Restored[/] agent '{name}' from snapshot {snapshot_dir.name} "
+            f"(backup: {backup_snapshot.name})"
+        )
+    else:
+        console.print(f"[green]Restored[/] agent '{name}' from snapshot {snapshot_dir.name}")
 
 
 @agent.group()
@@ -313,6 +327,48 @@ def snapshots_list(name: str):
         table.add_row(snap.name, created_at, files)
 
     console.print(table)
+
+
+def _create_snapshot(
+    project_root: Path,
+    agent_name: str,
+    require_all_files: bool,
+    note: str | None = None,
+) -> Path | None:
+    """Create snapshot for an agent.
+
+    If require_all_files is False and no snapshot files currently exist, returns None.
+    """
+    agent_dir = project_root / "agents" / agent_name
+
+    existing_files = [f for f in SNAPSHOT_FILES if (agent_dir / f).exists()]
+    missing_files = [f for f in SNAPSHOT_FILES if f not in existing_files]
+
+    if require_all_files and missing_files:
+        raise ValueError(f"Missing files for snapshot: {', '.join(missing_files)}")
+
+    if not existing_files:
+        return None
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+    snapshot_dir = _snapshots_root(project_root, agent_name) / timestamp
+    snapshot_dir.mkdir(parents=True, exist_ok=False)
+
+    for filename in existing_files:
+        shutil.copy2(agent_dir / filename, snapshot_dir / filename)
+
+    manifest = {
+        "agent": agent_name,
+        "snapshot": timestamp,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "files": existing_files,
+        "source": str(agent_dir.relative_to(project_root)),
+    }
+    if note:
+        manifest["note"] = note
+
+    (snapshot_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return snapshot_dir
 
 
 def _snapshots_root(project_root: Path, agent_name: str) -> Path:

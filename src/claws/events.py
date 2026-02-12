@@ -41,6 +41,8 @@ EVAL_STARTED = "eval.started"
 EVAL_COMPLETED = "eval.completed"
 DEPLOY_COMPLETED = "deploy.completed"
 PROJECT_INITIALIZED = "project.initialized"
+AGENT_SNAPSHOT_CREATED = "agent.snapshot.created"
+AGENT_SNAPSHOT_RESTORED = "agent.snapshot.restored"
 
 # Onboarding events
 ONBOARD_STARTED = "onboard.started"

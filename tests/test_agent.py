@@ -260,6 +260,55 @@ class TestAgentSnapshots:
             assert identity_path.read_text() == "first"
             assert memory_path.read_text() == "first"
 
+    def test_restore_creates_pre_restore_backup(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            root = Path(td)
+            _make_project(root)
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            identity_path = root / "agents" / "scout" / "identity.md"
+            memory_path = root / "agents" / "scout" / "memory.md"
+            identity_path.write_text("stable")
+            memory_path.write_text("stable")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            identity_path.write_text("mutated")
+            memory_path.write_text("mutated")
+
+            result = runner.invoke(main, ["agent", "restore", "scout"], catch_exceptions=False)
+            assert result.exit_code == 0, result.output
+            assert "backup:" in result.output
+
+            snap_dirs = sorted((root / ".claws" / "snapshots" / "scout").iterdir(), key=lambda p: p.name)
+            assert len(snap_dirs) >= 2
+            latest = snap_dirs[-1]
+            manifest = json.loads((latest / "manifest.json").read_text())
+            assert manifest.get("note") == "auto-pre-restore-backup"
+
+    def test_restore_no_backup_option(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            root = Path(td)
+            _make_project(root)
+            runner.invoke(main, ["agent", "create", "scout", "--role", "researcher"], catch_exceptions=False)
+
+            identity_path = root / "agents" / "scout" / "identity.md"
+            memory_path = root / "agents" / "scout" / "memory.md"
+            identity_path.write_text("v1")
+            memory_path.write_text("v1")
+            runner.invoke(main, ["agent", "snapshot", "scout"], catch_exceptions=False)
+
+            identity_path.write_text("v2")
+            memory_path.write_text("v2")
+
+            result = runner.invoke(main, ["agent", "restore", "scout", "--no-backup"], catch_exceptions=False)
+            assert result.exit_code == 0, result.output
+            assert "backup:" not in result.output
+
+            snap_dirs = [p for p in (root / ".claws" / "snapshots" / "scout").iterdir() if p.is_dir()]
+            assert len(snap_dirs) == 1
+
     def test_snapshots_list(self, tmp_path):
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
