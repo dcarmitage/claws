@@ -13,16 +13,20 @@ claws/
 │   ├── config.py           # Config dataclasses (ProjectConfig, ProviderConfig, etc.)
 │   ├── events.py           # Event types and event log (append-only JSONL)
 │   ├── evaluation.py       # Shared eval: _run_judge, evaluate_response()
-│   ├── trust.py            # Trust score computation from evaluation events
+│   ├── trust.py            # Trust score computation, autonomy tiers
+│   ├── scratchpad.py       # Scratchpad data model (Thread, Decision, Scratchpad)
 │   ├── commands/           # CLI subcommands
 │   │   ├── init.py         # claws init
-│   │   ├── agent.py        # claws agent create/list/info/onboard
+│   │   ├── agent.py        # claws agent create/list/info/onboard/tier
 │   │   ├── run.py          # claws run
 │   │   ├── status.py       # claws status
 │   │   ├── evaluate.py     # claws evaluate
 │   │   ├── curriculum.py   # claws curriculum list/show/create
 │   │   ├── onboard.py      # claws agent onboard
-│   │   └── doctor.py       # claws doctor
+│   │   ├── doctor.py       # claws doctor
+│   │   ├── scratchpad.py   # claws scratchpad init/show/tend/reflect/thread/decision/inbox
+│   │   ├── decision.py     # claws decision present/resolve/list/history
+│   │   └── session.py      # claws session start/end
 │   ├── providers/          # LLM provider abstraction
 │   │   ├── base.py         # Provider ABC, Message, Response
 │   │   ├── registry.py     # get_provider() factory
@@ -39,7 +43,7 @@ claws/
 │       ├── memory.md       # Agent memory template
 │       ├── prompts/        # Judge prompt templates
 │       └── curricula/      # Built-in curricula + scenario pools
-├── tests/                  # 322 pytest tests (19 files)
+├── tests/                  # 561 pytest tests (24 files)
 ├── evals/                  # Evaluation system docs
 ├── orchestrator/           # Event log docs
 ├── onboarding/             # Training system docs
@@ -81,7 +85,7 @@ claws/
 ```bash
 source /home/clawd/.venv/bin/activate
 
-# Run all 322 tests
+# Run all tests
 python -m pytest tests/ -v
 
 # Run a specific test file
@@ -94,7 +98,11 @@ python -m pytest tests/ -k "test_curriculum" -v
 ## Key design decisions
 
 - **Two judges, not one.** Logic judge checks accuracy and reasoning. Consistency judge checks completeness and coherence. Neither alone is sufficient.
-- **Event log.** Append-only JSONL. Every action emits a typed event. Trust scores are derived from evaluation history, not stored.
+- **Event log.** Append-only JSONL. Every action emits a typed event. Trust scores are derived from evaluation history, not stored. Decisions and sessions are events too.
 - **Onboarding curriculum.** Agents train through progressive phases with checkpoints. Personality traits are sampled, not assigned. Failed tasks trigger reflection before retry.
 - **Provider abstraction.** Anthropic native + OpenAI-compatible for everything else. One interface, any LLM.
 - **File ownership.** When multiple agents work on the codebase, each agent owns specific files. No file appears in two agents' ownership lists.
+- **Scratchpad ≠ memory.** Memory.md is retrospective (what happened). Scratchpad.md is operational (where are we now). Threads, decisions, inbox, reflections — structured working state.
+- **Decisions are events.** Both scratchpad decisions and first-class `decision` protocol decisions live in the event log. Queryable, auditable, per-agent. DECISION_PRESENTED records question + options; DECISION_RESOLVED records choice + reasoning.
+- **Autonomy tiers.** Trust scores map to permission levels: RESTRICTED (<7.0), STANDARD (7.0–8.5), AUTONOMOUS (>8.5). Tiers gate capabilities — higher trust unlocks more autonomy.
+- **Session continuity.** `session start` reads scratchpad on wake; `session end` auto-tends it. SESSION_STARTED/SESSION_ENDED events track work periods. Agents don't cold-start blind.
