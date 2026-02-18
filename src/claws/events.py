@@ -52,6 +52,14 @@ ONBOARD_TASK_FAILED = "onboard.task.failed"
 ONBOARD_PHASE_COMPLETED = "onboard.phase.completed"
 ONBOARD_COMPLETED = "onboard.completed"
 
+# Scratchpad events
+SCRATCHPAD_CREATED = "scratchpad.created"
+SCRATCHPAD_THREAD_ADDED = "scratchpad.thread.added"
+SCRATCHPAD_THREAD_UPDATED = "scratchpad.thread.updated"
+SCRATCHPAD_THREAD_ARCHIVED = "scratchpad.thread.archived"
+SCRATCHPAD_DECISION_ADDED = "scratchpad.decision.added"
+SCRATCHPAD_DECISION_RESOLVED = "scratchpad.decision.resolved"
+
 
 class EventSpine:
     """Append-only event log backed by a JSONL file."""

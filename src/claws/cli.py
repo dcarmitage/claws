@@ -10,6 +10,7 @@ from claws.commands.status import status
 from claws.commands.evaluate import evaluate
 from claws.commands.curriculum import curriculum
 from claws.commands.doctor import doctor
+from claws.commands.scratchpad import scratchpad
 
 
 @click.group(epilog="New to claws? Start with: claws init my-project")
@@ -29,3 +30,4 @@ main.add_command(status)
 main.add_command(evaluate)
 main.add_command(curriculum)
 main.add_command(doctor)
+main.add_command(scratchpad)
