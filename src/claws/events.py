@@ -60,6 +60,10 @@ SCRATCHPAD_THREAD_ARCHIVED = "scratchpad.thread.archived"
 SCRATCHPAD_DECISION_ADDED = "scratchpad.decision.added"
 SCRATCHPAD_DECISION_RESOLVED = "scratchpad.decision.resolved"
 
+# Decision protocol events (first-class, independent of scratchpad)
+DECISION_PRESENTED = "decision.presented"
+DECISION_RESOLVED = "decision.resolved"
+
 
 class EventSpine:
     """Append-only event log backed by a JSONL file."""
