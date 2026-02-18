@@ -12,6 +12,7 @@ from claws.commands.curriculum import curriculum
 from claws.commands.doctor import doctor
 from claws.commands.scratchpad import scratchpad
 from claws.commands.decision import decision
+from claws.commands.session import session
 
 
 @click.group(epilog="New to claws? Start with: claws init my-project")
@@ -33,3 +34,4 @@ main.add_command(curriculum)
 main.add_command(doctor)
 main.add_command(scratchpad)
 main.add_command(decision)
+main.add_command(session)

@@ -64,6 +64,10 @@ SCRATCHPAD_DECISION_RESOLVED = "scratchpad.decision.resolved"
 DECISION_PRESENTED = "decision.presented"
 DECISION_RESOLVED = "decision.resolved"
 
+# Session continuity events
+SESSION_STARTED = "session.started"
+SESSION_ENDED = "session.ended"
+
 
 class EventSpine:
     """Append-only event log backed by a JSONL file."""
