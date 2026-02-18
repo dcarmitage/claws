@@ -102,6 +102,46 @@ def init(agent_name: str, force: bool):
 
 @scratchpad.command()
 @click.argument("agent_name")
+@click.option("--summary", is_flag=True, help="Print a compact one-line summary")
+def tend(agent_name: str, summary: bool):
+    """Touch the scratchpad — update the last-tended timestamp.
+
+    Designed for cron/automated use at session boundaries.
+    """
+    project_root = _require_project()
+    _require_agent(project_root, agent_name)
+    sp = _require_scratchpad(project_root, agent_name)
+
+    save_scratchpad(project_root, sp)  # to_markdown() updates last_tended
+
+    if summary:
+        threads = len(sp.threads)
+        pending = len([d for d in sp.decisions if not d.resolved])
+        inbox_count = len(sp.inbox)
+        console.print(
+            f"{agent_name}: {threads} threads, {pending} decisions, {inbox_count} inbox | tended {sp.last_tended}"
+        )
+    else:
+        console.print(f"[green]Scratchpad tended:[/] {agent_name} ({sp.last_tended})")
+
+
+@scratchpad.command()
+@click.argument("agent_name")
+@click.argument("text")
+def reflect(agent_name: str, text: str):
+    """Add a reflection to an agent's scratchpad."""
+    project_root = _require_project()
+    _require_agent(project_root, agent_name)
+    sp = _require_scratchpad(project_root, agent_name)
+
+    sp.reflections.append(text)
+    save_scratchpad(project_root, sp)
+
+    console.print(f"[green]Reflection added for {agent_name}.[/]")
+
+
+@scratchpad.command()
+@click.argument("agent_name")
 @click.option("--raw", is_flag=True, help="Show raw markdown instead of formatted")
 def show(agent_name: str, raw: bool):
     """Display an agent's scratchpad."""
@@ -413,3 +453,56 @@ def decision_list(agent_name: str, show_all: bool):
         table.add_row(str(d.number), d.question, d.context, status)
 
     console.print(table)
+
+
+# --- Inbox subcommands ---
+
+@scratchpad.group()
+def inbox():
+    """Manage scratchpad inbox items."""
+
+
+@inbox.command("add")
+@click.argument("agent_name")
+@click.argument("item")
+def inbox_add(agent_name: str, item: str):
+    """Add an item to an agent's scratchpad inbox."""
+    project_root = _require_project()
+    _require_agent(project_root, agent_name)
+    sp = _require_scratchpad(project_root, agent_name)
+
+    sp.inbox.append(item)
+    save_scratchpad(project_root, sp)
+
+    console.print(f"[green]Inbox item added for {agent_name}.[/]")
+
+
+@inbox.command("list")
+@click.argument("agent_name")
+def inbox_list(agent_name: str):
+    """List inbox items in an agent's scratchpad."""
+    project_root = _require_project()
+    _require_agent(project_root, agent_name)
+    sp = _require_scratchpad(project_root, agent_name)
+
+    if not sp.inbox:
+        console.print("[dim]Inbox is empty.[/]")
+        return
+
+    for i, item in enumerate(sp.inbox, 1):
+        console.print(f"  {i}. {item}")
+
+
+@inbox.command("clear")
+@click.argument("agent_name")
+def inbox_clear(agent_name: str):
+    """Clear all inbox items from an agent's scratchpad."""
+    project_root = _require_project()
+    _require_agent(project_root, agent_name)
+    sp = _require_scratchpad(project_root, agent_name)
+
+    count = len(sp.inbox)
+    sp.inbox.clear()
+    save_scratchpad(project_root, sp)
+
+    console.print(f"[green]Inbox cleared for {agent_name}.[/] ({count} items removed)")

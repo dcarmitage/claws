@@ -1,0 +1,54 @@
+pool: scratchpad_states
+scenarios:
+  - |
+    ## 🧵 Open Threads
+    ### Database Migration
+    **State:** Blocked — waiting for schema review from lead
+    ⏸ Schema review not started
+    → Once approved, run migration scripts on staging
+    ### API Redesign
+    **State:** In progress — endpoint spec 70% done
+    → Finish /users and /projects endpoints
+    - Using OpenAPI 3.0 spec format
+    ### Docs Update
+    **State:** Not started
+    → Begin after API spec is finalized
+    ## ⚖️ Decisions Waiting
+    | # | Decision | Context | Urgency |
+    |---|----------|---------|---------|
+    | 1 | REST or GraphQL for new API? | Team split on preference. REST is simpler, GraphQL more flexible. | high |
+  - |
+    ## 🧵 Open Threads
+    ### Auth Refactor
+    **State:** In progress — token rotation implemented, session handling next
+    → Implement session invalidation on password change
+    ⏸ Need security review before merging
+    ### Performance Audit
+    **State:** Data collection phase — running load tests
+    → Analyze results when tests complete (~2 hours)
+    - p95 latency currently at 340ms, target is 200ms
+    ### Onboarding Flow
+    **State:** Design review passed
+    → Implement step 1: email verification
+    ## ⚖️ Decisions Waiting
+    | # | Decision | Context | Urgency |
+    |---|----------|---------|---------|
+    | 1 | Redis or Memcached for session cache? | Redis has more features, Memcached is simpler. Both meet requirements. | normal |
+    | 2 | Ship auth refactor before or after performance fixes? | Auth is security-critical but performance is user-visible. | high |
+  - |
+    ## 🧵 Open Threads
+    ### Search Feature
+    **State:** Prototype working — basic keyword search returns results
+    → Add fuzzy matching and ranking
+    ⏸ Elasticsearch cluster not provisioned yet
+    ### Mobile Responsive
+    **State:** 3 of 7 pages converted
+    → Convert dashboard and settings pages next
+    - Navigation menu done, sidebar done, landing done
+    ### CI Pipeline
+    **State:** Green — all 156 tests passing
+    → Add integration test stage
+    ## ⚖️ Decisions Waiting
+    | # | Decision | Context | Urgency |
+    |---|----------|---------|---------|
+    | 1 | Elasticsearch vs Meilisearch for search backend? | ES is industry standard but heavy. Meili is lighter and faster to set up. | normal |

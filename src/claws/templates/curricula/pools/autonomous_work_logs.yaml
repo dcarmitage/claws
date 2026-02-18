@@ -1,0 +1,30 @@
+pool: autonomous_work_logs
+scenarios:
+  - >
+    Over the past 4 hours you: completed the API endpoint refactor (12 endpoints
+    migrated from v1 to v2 format), discovered that the webhook retry logic has
+    an exponential backoff bug (it resets after 3 retries instead of continuing),
+    wrote a fix for the backoff bug and added 4 tests, started the database index
+    optimization but stopped because adding the composite index on (user_id, created_at)
+    would lock the table for ~20 minutes during a migration and you're not sure if
+    that's acceptable in production. 2 of the 12 migrated endpoints have slightly
+    different response formats than documented — you updated the docs. The CI is green.
+  - >
+    Over the past 6 hours you: set up the monitoring dashboard with 5 panels
+    (request rate, error rate, p95 latency, active connections, memory usage),
+    found that memory usage has been climbing 2MB/hour for the past week (possible
+    leak), investigated and narrowed the leak to the WebSocket connection handler
+    which doesn't clean up properly on client disconnect, wrote a patch but it
+    needs testing with concurrent connections which you can't easily simulate
+    in the test environment. Also deployed the latest release to staging — all
+    smoke tests pass. Production deploy is ready but you want human sign-off first.
+  - >
+    Over the past 3 hours you: reviewed and merged 2 PRs (#53 and #55), rejected
+    PR #54 because it introduced a circular import that only manifests when running
+    in production mode (explained in review comments). Refactored the email
+    notification templates — they now use a shared base template, reducing duplication
+    from 5 nearly-identical files to 1 base + 5 small overrides. Found that the
+    password reset flow has a timing attack vulnerability — the error response for
+    "user not found" returns 50ms faster than "wrong token." Haven't fixed it yet
+    because the fix needs a constant-time comparison and you want to make sure the
+    approach is right. No tests are failing. No decisions were resolved.

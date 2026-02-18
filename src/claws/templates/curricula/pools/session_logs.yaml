@@ -1,0 +1,28 @@
+pool: session_logs
+scenarios:
+  - |
+    Session work (2 hours):
+    - Completed database migration scripts for v3 schema (3 new tables, 2 altered)
+    - Ran migration on staging — succeeded, took 12 seconds
+    - Found a bug: the users.created_at column migration drops the default value
+    - Opened a thread about the bug, haven't fixed it yet
+    - The human asked me to also look at the search indexing — haven't started
+    - Decision pending: should we backfill the 50k existing rows or handle nulls in code?
+  - |
+    Session work (4 hours, overnight):
+    - Refactored auth module: split monolithic auth.py into auth/tokens.py, auth/sessions.py, auth/middleware.py
+    - All 89 auth tests still pass after refactor
+    - Discovered that the rate limiter has a race condition under high concurrency
+    - Wrote a failing test for the race condition (test_concurrent_rate_limit_race)
+    - Did NOT fix the race condition — needs design decision about locking strategy
+    - Updated the API docs for token endpoints to match new module structure
+    - The CI pipeline started failing on an unrelated flaky test (test_email_send_timeout) — retried and it passed
+  - |
+    Session work (1 hour):
+    - Reviewed PR #42 from the other agent — found 3 issues, left comments
+    - Issue 1: SQL injection risk in search query builder (critical)
+    - Issue 2: Missing error handling for network timeouts (moderate)
+    - Issue 3: Inconsistent naming (minor, style)
+    - Started implementing the notification system — got the event emitter working
+    - Notification delivery (email, webhook) not started yet
+    - The human mentioned wanting to demo the project Friday — that's 3 days away

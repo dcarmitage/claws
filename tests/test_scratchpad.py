@@ -952,3 +952,315 @@ class TestScratchpadIntegration:
             assert "scratchpad.thread.archived" in event_types
             assert "scratchpad.decision.added" in event_types
             assert "scratchpad.decision.resolved" in event_types
+
+
+# =============================================================================
+# Tend Command Tests
+# =============================================================================
+
+
+class TestScratchpadTend:
+    def test_tend_updates_timestamp(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(main, ["scratchpad", "tend", "scout"], catch_exceptions=False)
+            assert result.exit_code == 0
+            assert "tended" in result.output.lower()
+
+    def test_tend_summary(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "thread", "add", "scout", "Thread A"],
+                catch_exceptions=False,
+            )
+            runner.invoke(
+                main,
+                ["scratchpad", "decision", "add", "scout", "Decide?"],
+                catch_exceptions=False,
+            )
+            result = runner.invoke(
+                main,
+                ["scratchpad", "tend", "scout", "--summary"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "1 threads" in result.output
+            assert "1 decisions" in result.output
+            assert "scout" in result.output
+
+    def test_tend_no_scratchpad(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            result = runner.invoke(main, ["scratchpad", "tend", "scout"])
+            assert result.exit_code != 0
+
+    def test_tend_preserves_content(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "thread", "add", "scout", "My Thread", "--state", "Active"],
+                catch_exceptions=False,
+            )
+            runner.invoke(main, ["scratchpad", "tend", "scout"], catch_exceptions=False)
+            sp = load_scratchpad(Path(td), "scout")
+            assert len(sp.threads) == 1
+            assert sp.threads[0].name == "My Thread"
+            assert sp.threads[0].state == "Active"
+
+
+# =============================================================================
+# Reflect Command Tests
+# =============================================================================
+
+
+class TestScratchpadReflect:
+    def test_reflect_adds_reflection(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(
+                main,
+                ["scratchpad", "reflect", "scout", "I work better with structure"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "reflection added" in result.output.lower()
+            sp = load_scratchpad(Path(td), "scout")
+            assert "I work better with structure" in sp.reflections
+
+    def test_reflect_multiple(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "reflect", "scout", "First thought"],
+                catch_exceptions=False,
+            )
+            runner.invoke(
+                main,
+                ["scratchpad", "reflect", "scout", "Second thought"],
+                catch_exceptions=False,
+            )
+            sp = load_scratchpad(Path(td), "scout")
+            assert len(sp.reflections) == 2
+            assert sp.reflections[0] == "First thought"
+            assert sp.reflections[1] == "Second thought"
+
+    def test_reflect_no_scratchpad(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            result = runner.invoke(
+                main,
+                ["scratchpad", "reflect", "scout", "Some thought"],
+            )
+            assert result.exit_code != 0
+
+
+# =============================================================================
+# Inbox Command Tests
+# =============================================================================
+
+
+class TestScratchpadInboxAdd:
+    def test_inbox_add(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Check the logs"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "added" in result.output.lower()
+            sp = load_scratchpad(Path(td), "scout")
+            assert "Check the logs" in sp.inbox
+
+    def test_inbox_add_multiple(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Item 1"],
+                catch_exceptions=False,
+            )
+            runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Item 2"],
+                catch_exceptions=False,
+            )
+            sp = load_scratchpad(Path(td), "scout")
+            assert len(sp.inbox) == 2
+
+
+class TestScratchpadInboxList:
+    def test_inbox_list(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Review PR"],
+                catch_exceptions=False,
+            )
+            result = runner.invoke(
+                main,
+                ["scratchpad", "inbox", "list", "scout"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "Review PR" in result.output
+
+    def test_inbox_list_empty(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(
+                main,
+                ["scratchpad", "inbox", "list", "scout"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "empty" in result.output.lower()
+
+
+class TestScratchpadInboxClear:
+    def test_inbox_clear(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Item 1"],
+                catch_exceptions=False,
+            )
+            runner.invoke(
+                main,
+                ["scratchpad", "inbox", "add", "scout", "Item 2"],
+                catch_exceptions=False,
+            )
+            result = runner.invoke(
+                main,
+                ["scratchpad", "inbox", "clear", "scout"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "cleared" in result.output.lower()
+            assert "2 items" in result.output
+            sp = load_scratchpad(Path(td), "scout")
+            assert len(sp.inbox) == 0
+
+    def test_inbox_clear_empty(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            _make_project(Path(td))
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(
+                main,
+                ["scratchpad", "inbox", "clear", "scout"],
+                catch_exceptions=False,
+            )
+            assert result.exit_code == 0
+            assert "0 items" in result.output
+
+
+# =============================================================================
+# Status Integration Tests
+# =============================================================================
+
+
+class TestStatusScratchpadIntegration:
+    def test_status_shows_scratchpad_threads(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            agents = {
+                "scout": {"role": "researcher", "provider": "default", "machine": "local"},
+            }
+            _make_project(Path(td), agents=agents)
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "thread", "add", "scout", "API Design", "--state", "Active"],
+                catch_exceptions=False,
+            )
+            result = runner.invoke(main, ["status"], catch_exceptions=False)
+            assert result.exit_code == 0
+            assert "Working Memory" in result.output
+            assert "API Design" in result.output
+
+    def test_status_shows_pending_decisions(self, tmp_path):
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            agents = {
+                "scout": {"role": "researcher", "provider": "default", "machine": "local"},
+            }
+            _make_project(Path(td), agents=agents)
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            runner.invoke(
+                main,
+                ["scratchpad", "decision", "add", "scout", "Use REST?"],
+                catch_exceptions=False,
+            )
+            result = runner.invoke(main, ["status"], catch_exceptions=False)
+            assert result.exit_code == 0
+            assert "#1" in result.output
+
+    def test_status_no_scratchpad_no_error(self, tmp_path):
+        """Status should not error when agents have no scratchpad."""
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            agents = {
+                "scout": {"role": "researcher", "provider": "default", "machine": "local"},
+            }
+            _make_project(Path(td), agents=agents)
+            result = runner.invoke(main, ["status"], catch_exceptions=False)
+            assert result.exit_code == 0
+
+    def test_status_hides_empty_scratchpad(self, tmp_path):
+        """Status should not show Working Memory if scratchpad has no threads/decisions."""
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            agents = {
+                "scout": {"role": "researcher", "provider": "default", "machine": "local"},
+            }
+            _make_project(Path(td), agents=agents)
+            _make_agent(Path(td), "scout")
+            runner.invoke(main, ["scratchpad", "init", "scout"], catch_exceptions=False)
+            result = runner.invoke(main, ["status"], catch_exceptions=False)
+            assert result.exit_code == 0
+            assert "Working Memory" not in result.output

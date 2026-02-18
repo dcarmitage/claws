@@ -1,0 +1,69 @@
+pool: messy_scratchpads
+scenarios:
+  - |
+    ## 🧵 Open Threads
+    ### Database Migration
+    **State:** Done — migration ran successfully on staging and prod
+    → Nothing left to do here
+    ### API Redesign
+    **State:** In progress
+    → Write endpoint tests
+    - REST was chosen (decision #1 resolved)
+    - OpenAPI spec is done
+    ### API Redesign — testing
+    **State:** Started writing tests
+    → Finish /users endpoint tests
+    - 4 of 12 endpoints tested
+    ### Docs Update
+    **State:** In progress — started after API spec finalized
+    → Update authentication section
+    ### Bug: auth token expiry
+    **State:** Investigated — root cause found
+    → Fixed in PR #47, awaiting review
+    - Tokens were using UTC but comparison used local time
+    ### Bug: auth token expiry fix
+    **State:** PR merged
+    → Deploy to staging
+    ### Old: Search Feature Exploration
+    **State:** Abandoned — decided to use existing library instead
+    ## ⚖️ Decisions Waiting
+    | # | Decision | Context | Urgency |
+    |---|----------|---------|---------|
+    | 1 | REST or GraphQL? | Decided: REST | resolved |
+    | 2 | Which test framework? | Decided: pytest | resolved |
+    | 3 | Deploy Friday or Monday? | Friday is demo day, Monday is safer | high |
+    | 4 | Add rate limiting now or later? | Performance audit showed need | normal |
+    ## 📬 Inbox
+    - Check if staging deployment script handles rollbacks
+    - Review the new hire's first PR
+    - The new hire's PR is #52
+    - Look into webhooks for notification system
+    ## 🪞 Reflections
+    - I tend to create new threads instead of updating existing ones
+    - The duplicate API Redesign threads are evidence of this
+  - |
+    ## 🧵 Open Threads
+    ### Feature: User Profiles
+    **State:** Design done, implementation started
+    → Build profile settings page
+    ### Feature: User Profiles — Backend
+    **State:** API endpoints done
+    → Waiting for frontend to integrate
+    ### Performance
+    **State:** p95 down from 340ms to 210ms after caching
+    → Still need to hit 200ms target
+    - Added Redis caching for hot paths
+    ### Performance — Redis
+    **State:** Redis deployed, caching working
+    → Monitor cache hit rates
+    ### Old thread: Evaluate ORMs
+    **State:** Decided on SQLAlchemy weeks ago
+    ### CI Fixes
+    **State:** Pipeline green as of yesterday
+    → Nothing pending
+    ## ⚖️ Decisions Waiting
+    | # | Decision | Context | Urgency |
+    |---|----------|---------|---------|
+    | 1 | SQLAlchemy or Tortoise ORM? | Decided: SQLAlchemy | resolved |
+    | 2 | Profile photos: S3 or local storage? | S3 is scalable, local is simpler for now | normal |
+    | 3 | Ship profiles without photo support? | Could ship faster, add photos later | high |

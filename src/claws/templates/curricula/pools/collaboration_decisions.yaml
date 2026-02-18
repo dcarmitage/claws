@@ -1,0 +1,20 @@
+pool: collaboration_decisions
+scenarios:
+  - >
+    The test suite takes 8 minutes to run. You have identified that 60% of the
+    time is spent in integration tests that hit a real database. You could:
+    (A) add an in-memory SQLite layer for tests, (B) parallelize the test suite,
+    or (C) split into fast unit tests and slow integration tests with different
+    CI stages. Each has different tradeoffs for maintenance and reliability.
+  - >
+    The project needs a caching layer. Redis is the standard choice but adds
+    operational complexity (another service to manage, monitor, and back up).
+    An in-process LRU cache would be simpler but doesn't survive restarts and
+    can't be shared across workers. A hybrid approach (in-process + Redis fallback)
+    is more complex to implement but covers both cases.
+  - >
+    The current authentication system uses JWTs with 24-hour expiry. A security
+    audit recommends reducing to 15 minutes with refresh tokens. This improves
+    security but will cause more frequent token refreshes, potentially affecting
+    UX. The mobile app team says they need at least 1-hour tokens to avoid
+    constant re-authentication on flaky connections.

@@ -14,6 +14,7 @@ from claws.events import (
     AGENT_CREATED, EVAL_COMPLETED,
 )
 from claws.trust import TrustProfile
+from claws.scratchpad import load_scratchpad
 
 console = Console()
 
@@ -38,6 +39,9 @@ def status(events: int):
 
     # Agent table
     _print_agent_table(config, spine)
+
+    # Scratchpad summaries
+    _print_scratchpad_summary(config, project_root)
 
     # Recent events
     if all_events:
@@ -109,6 +113,38 @@ def _print_agent_table(config, spine):
         console.print(table)
     else:
         console.print("[dim]No agents configured. Run: claws agent create <name> --role <role>[/]")
+
+
+def _print_scratchpad_summary(config, project_root):
+    """Show scratchpad state for agents that have one."""
+    has_any = False
+    for name in config.agents:
+        sp = load_scratchpad(project_root, name)
+        if sp is None:
+            continue
+
+        active_threads = sp.threads
+        pending_decisions = [d for d in sp.decisions if not d.resolved]
+
+        if not active_threads and not pending_decisions:
+            continue
+
+        if not has_any:
+            console.print()
+            console.print("[bold]Working Memory[/]")
+            has_any = True
+
+        parts = []
+        if active_threads:
+            thread_names = ", ".join(t.name for t in active_threads[:3])
+            suffix = f" (+{len(active_threads) - 3})" if len(active_threads) > 3 else ""
+            parts.append(f"threads: {thread_names}{suffix}")
+        if pending_decisions:
+            decision_texts = ", ".join(f"#{d.number}" for d in pending_decisions[:3])
+            suffix = f" (+{len(pending_decisions) - 3})" if len(pending_decisions) > 3 else ""
+            parts.append(f"decisions: {decision_texts}{suffix}")
+
+        console.print(f"  [bold]{name}[/]  {' · '.join(parts)}")
 
 
 def _print_recent_events(all_events, limit):
