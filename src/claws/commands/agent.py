@@ -21,7 +21,7 @@ from claws.events import (
     AGENT_SNAPSHOT_CREATED,
     AGENT_SNAPSHOT_RESTORED,
 )
-from claws.trust import TrustProfile
+from claws.trust import TrustProfile, tier_label
 
 console = Console()
 TEMPLATES = Path(__file__).parent.parent / "templates"
@@ -182,6 +182,7 @@ def info(name: str):
             color = "green" if avg >= 8.0 else "yellow" if avg >= 6.0 else "red"
             trust_lines.append(f"  {judge}: [{color}]{avg:.1f}[/]")
         trust_lines.append(f"Trend:       {profile.trend}")
+        trust_lines.append(f"Tier:        {tier_label(profile.tier)}")
         console.print()
         console.print(Panel("\n".join(trust_lines), title="Trust Profile", border_style="cyan"))
 
@@ -191,6 +192,52 @@ def info(name: str):
         console.print(f"\n[bold]Recent events:[/] ({len(events)} total)")
         for event in events[-5:]:
             console.print(f"  {event.ts[:19]}  {event.type}  {event.data}")
+
+
+@agent.command()
+@click.argument("name")
+def tier(name: str):
+    """Show an agent's autonomy tier, trust score, and permissions."""
+    project_root = find_project_root()
+    if project_root is None:
+        console.print("[red]Error:[/] Not in a claws project.")
+        raise SystemExit(1)
+
+    agent_dir = project_root / "agents" / name
+    if not agent_dir.exists():
+        console.print(f"[red]Error:[/] Agent '{name}' not found.")
+        raise SystemExit(1)
+
+    spine = EventSpine(project_root)
+    profile = TrustProfile.for_agent(spine, name)
+
+    t = profile.tier
+    label = tier_label(t)
+
+    tier_colors = {
+        "Restricted": "red",
+        "Standard": "yellow",
+        "Autonomous": "green",
+    }
+    color = tier_colors.get(label, "white")
+
+    lines = []
+    lines.append(f"Agent:       [bold]{name}[/]")
+    if profile.average is not None:
+        lines.append(f"Trust Score: {profile.average:.1f}")
+    else:
+        lines.append("Trust Score: [dim]no evaluations[/]")
+    lines.append(f"Evaluations: {profile.eval_count}")
+    lines.append(f"Trend:       {profile.trend}")
+    lines.append("")
+    lines.append(f"[bold]Tier: [{color}]{label}[/{color}][/bold]")
+    lines.append("")
+    lines.append("[bold]Permissions:[/]")
+    for perm in profile.permissions:
+        lines.append(f"  • {perm}")
+
+    console.print()
+    console.print(Panel("\n".join(lines), title="Autonomy Tier", border_style=color))
 
 
 @agent.command()

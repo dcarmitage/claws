@@ -13,7 +13,7 @@ from claws.events import (
     EventSpine, TASK_STARTED, TASK_COMPLETED, TASK_FAILED,
     AGENT_CREATED, EVAL_COMPLETED,
 )
-from claws.trust import TrustProfile
+from claws.trust import TrustProfile, tier_label
 from claws.scratchpad import load_scratchpad
 
 console = Console()
@@ -63,6 +63,7 @@ def _print_agent_table(config, spine):
     table.add_column("Last Task")
     table.add_column("Status")
     table.add_column("Trust")
+    table.add_column("Tier")
 
     for name, agent_cfg in config.agents.items():
         agent_events = spine.read_by_agent(name)
@@ -107,7 +108,13 @@ def _print_agent_table(config, spine):
             else:
                 trust_text = "[dim]new[/]"
 
-        table.add_row(name, agent_cfg.role, task_count, task_text, status_text, trust_text)
+        # Tier
+        tier_text = tier_label(profile.tier)
+        tier_colors = {"Restricted": "red", "Standard": "yellow", "Autonomous": "green"}
+        tier_color = tier_colors.get(tier_text, "white")
+        tier_text = f"[{tier_color}]{tier_text}[/]"
+
+        table.add_row(name, agent_cfg.role, task_count, task_text, status_text, trust_text, tier_text)
 
     if config.agents:
         console.print(table)

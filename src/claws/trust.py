@@ -3,13 +3,91 @@
 A TrustProfile aggregates evaluation results from the event log
 to provide per-agent quality metrics, judge-level breakdowns, and
 directional trends over time.
+
+Autonomy tiers map trust scores to permission levels:
+- RESTRICTED (score < 7.0): Execute assigned tasks, report results.
+- STANDARD (score 7.0–8.5): Propose actions, surface decisions, maintain working state.
+- AUTONOMOUS (score > 8.5): Take independent action, push code, modify configurations.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 
 from claws.events import EventSpine, EVAL_COMPLETED
+
+
+# --- Autonomy Tier System ---
+
+# Tier boundary constants (configurable in future via claws.yaml)
+TIER_STANDARD_THRESHOLD = 7.0
+TIER_AUTONOMOUS_THRESHOLD = 8.5
+
+
+class AutonomyTier(Enum):
+    """Permission tiers derived from trust scores."""
+    RESTRICTED = "restricted"
+    STANDARD = "standard"
+    AUTONOMOUS = "autonomous"
+
+
+# Permissions granted at each tier
+TIER_PERMISSIONS: dict[AutonomyTier, list[str]] = {
+    AutonomyTier.RESTRICTED: [
+        "execute assigned tasks",
+        "report results",
+        "read project files",
+    ],
+    AutonomyTier.STANDARD: [
+        "execute assigned tasks",
+        "report results",
+        "read project files",
+        "propose actions",
+        "surface decisions",
+        "maintain scratchpad",
+        "update working memory",
+    ],
+    AutonomyTier.AUTONOMOUS: [
+        "execute assigned tasks",
+        "report results",
+        "read project files",
+        "propose actions",
+        "surface decisions",
+        "maintain scratchpad",
+        "update working memory",
+        "take independent action",
+        "push code changes",
+        "modify configurations",
+        "run automated tasks",
+    ],
+}
+
+
+def compute_tier(score: float | None) -> AutonomyTier:
+    """Compute autonomy tier from average trust score."""
+    if score is None:
+        return AutonomyTier.RESTRICTED
+    if score > TIER_AUTONOMOUS_THRESHOLD:
+        return AutonomyTier.AUTONOMOUS
+    if score >= TIER_STANDARD_THRESHOLD:
+        return AutonomyTier.STANDARD
+    return AutonomyTier.RESTRICTED
+
+
+def tier_label(tier: AutonomyTier) -> str:
+    """Human-readable label for a tier."""
+    labels = {
+        AutonomyTier.RESTRICTED: "Restricted",
+        AutonomyTier.STANDARD: "Standard",
+        AutonomyTier.AUTONOMOUS: "Autonomous",
+    }
+    return labels[tier]
+
+
+def tier_permissions(tier: AutonomyTier) -> list[str]:
+    """Return the list of permissions for a tier."""
+    return list(TIER_PERMISSIONS[tier])
 
 
 @dataclass
@@ -28,6 +106,16 @@ class TrustProfile:
         if not self.overall_scores:
             return None
         return sum(self.overall_scores) / len(self.overall_scores)
+
+    @property
+    def tier(self) -> AutonomyTier:
+        """Compute autonomy tier from average score."""
+        return compute_tier(self.average)
+
+    @property
+    def permissions(self) -> list[str]:
+        """Return permissions for this agent's current tier."""
+        return tier_permissions(self.tier)
 
     @property
     def judge_averages(self) -> dict[str, float]:
